@@ -90,11 +90,11 @@ class MailPageWidget(QWidget):
             mail_list.mark_spam_requested.connect(self._on_mark_spam)
             mail_list.mark_not_spam_requested.connect(self._on_mark_not_spam)
 
-            print("使用增强版邮件列表（支持多选和批量操作）")
+            logger.info("使用增强版邮件列表（支持多选和批量操作）")
             return mail_list
 
         except ImportError as e:
-            print(f"无法加载增强版邮件列表: {e}, 使用原版")
+            logger.warning("无法加载增强版邮件列表: %s, 使用原版", e)
             from openemail.ui.mail.mail_list import MailListWidget
 
             mail_list = MailListWidget()
@@ -118,7 +118,7 @@ class MailPageWidget(QWidget):
             self._search_bar = EnhancedSearchBar()
             self._search_bar.search_requested.connect(self._on_search)
             self._search_bar.advanced_search_requested.connect(self._on_advanced_search)
-            print("使用增强版搜索栏（支持语法高亮和自动建议）")
+            logger.info("使用增强版搜索栏（支持语法高亮和自动建议）")
         except ImportError:
             # 回退到原版搜索栏
             from openemail.ui.mail.search_bar import SearchBar
@@ -417,11 +417,11 @@ class MailPageWidget(QWidget):
                     limit=100,
                     include_attachments=True,
                 )
-                print(f"增强版搜索找到 {len(emails)} 个结果")
+                logger.debug("增强版搜索找到 %d 个结果", len(emails))
             except ImportError:
                 # 回退到原版搜索
                 emails = Email.search(self._current_account.id, query)
-                print(f"原版搜索找到 {len(emails)} 个结果")
+                logger.debug("原版搜索找到 %d 个结果", len(emails))
 
             self._mail_list.load_emails(emails)
             self._mail_list.set_title(f"搜索: {query}")
@@ -436,7 +436,7 @@ class MailPageWidget(QWidget):
                 dialog.search_requested.connect(self._on_search)
                 dialog.show()
         except ImportError:
-            print("高级搜索对话框不可用")
+            logger.debug("高级搜索对话框不可用")
 
     def _on_search_cleared(self) -> None:
         if self._current_account and self._current_folder:
@@ -986,7 +986,7 @@ class MainWindow(QMainWindow):
             label_manager.labels_changed.connect(self._refresh_mail_lists)
             return label_manager
         except ImportError as e:
-            print(f"无法加载标签管理页面: {e}, 使用占位页面")
+            logger.warning("无法加载标签管理页面: %s, 使用占位页面", e)
             return PlaceholderPage("标签", "标签管理功能将在此显示")
 
     def _create_contact_page(self) -> QWidget:
@@ -998,7 +998,7 @@ class MainWindow(QMainWindow):
             contact_page.email_requested.connect(self._on_contact_email_requested)
             return contact_page
         except ImportError as e:
-            print(f"无法加载联系人页面: {e}, 使用占位页面")
+            logger.warning("无法加载联系人页面: %s, 使用占位页面", e)
             return PlaceholderPage("联系人", "联系人管理功能将在此显示")
 
     def _on_contact_email_requested(self, email_address: str):
@@ -1039,7 +1039,7 @@ class MainWindow(QMainWindow):
 
             return CalendarPageWidget()
         except ImportError as e:
-            print(f"无法加载日历页面: {e}")
+            logger.warning("无法加载日历页面: %s", e)
             return PlaceholderPage("日历", "日历视图将在此显示")
 
     def _create_todo_page(self, view_mode: str = "all") -> QWidget:
@@ -1048,7 +1048,7 @@ class MainWindow(QMainWindow):
 
             return TodoPageWidget(view_mode=view_mode)
         except ImportError as e:
-            print(f"无法加载待办页面: {e}")
+            logger.warning("无法加载待办页面: %s", e)
             return PlaceholderPage("待办", "待办事项将在此显示")
 
     def _create_project_page(self) -> QWidget:
@@ -1057,7 +1057,7 @@ class MainWindow(QMainWindow):
 
             return ProjectPageWidget()
         except ImportError as e:
-            print(f"无法加载项目板页面: {e}")
+            logger.warning("无法加载项目板页面: %s", e)
             return PlaceholderPage("项目板", "项目看板将在此显示")
 
     def _create_settings_page(self) -> QWidget:
@@ -1069,7 +1069,7 @@ class MainWindow(QMainWindow):
             page.accounts_changed.connect(self._on_accounts_changed)
             return page
         except ImportError as e:
-            print(f"无法加载设置页面: {e}")
+            logger.warning("无法加载设置页面: %s", e)
             return PlaceholderPage("设置", "应用设置将在此显示")
 
     def _setup_pages(self) -> None:

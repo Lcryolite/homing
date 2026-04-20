@@ -527,7 +527,7 @@ class LabelEditorDialog(QDialog):
                 self.rules_edit.setPlainText(
                     json.dumps(rules, indent=2, ensure_ascii=False)
                 )
-            except:
+            except Exception:
                 self.rules_edit.setPlainText(self.label.description)
 
         # 更新规则编辑器可见性
@@ -838,7 +838,7 @@ class LabelManager(QWidget):
                 rules_group.setLayout(rules_layout)
 
                 self.detail_layout.addWidget(rules_group)
-            except:
+            except Exception:
                 pass
 
         # 添加操作按钮

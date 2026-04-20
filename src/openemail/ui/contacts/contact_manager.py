@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Optional, List
 
@@ -29,6 +30,8 @@ from PyQt6.QtGui import QFont, QAction, QIcon
 
 from openemail.models.contact import Contact, ContactTag
 from openemail.models.account import Account
+
+logger = logging.getLogger(__name__)
 
 
 class ContactListWidget(QWidget):
@@ -511,7 +514,7 @@ class ContactListWidget(QWidget):
         """发送邮件给联系人"""
         # 这个功能应该由主窗口处理
         # 这里只发送信号或记录日志
-        print(f"发送邮件给: {contact.email}")
+        logger.debug("发送邮件给: %s", contact.email)
         # TODO: 触发主窗口的写邮件功能
 
     def _copy_to_clipboard(self, text: str):

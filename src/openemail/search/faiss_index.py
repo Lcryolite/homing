@@ -414,7 +414,7 @@ class FaissIndexManager:
             try:
                 stats["total_vectors"] = self._index.ntotal
                 stats["cache_size"] = len(self._embeddings_cache)
-            except:
+            except Exception:
                 pass
 
         return stats
