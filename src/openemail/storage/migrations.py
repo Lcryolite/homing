@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 9
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -282,5 +282,49 @@ MIGRATIONS: dict[int, list[str]] = {
         # RFC 6154 SPECIAL-USE 支持
         """ALTER TABLE folders ADD COLUMN special_use TEXT DEFAULT ''""",
         """CREATE INDEX IF NOT EXISTS idx_folders_special_use ON folders(account_id, special_use)""",
+    ],
+    8: [
+        # 草稿自动保存
+        """CREATE TABLE IF NOT EXISTS drafts (
+            id              INTEGER PRIMARY KEY,
+            account_id      INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            folder_id       INTEGER REFERENCES folders(id) ON DELETE SET NULL,
+            message_id      TEXT,
+            uid             TEXT,
+            from_addr       TEXT NOT NULL,
+            to_addrs        TEXT DEFAULT '',
+            cc_addrs        TEXT DEFAULT '',
+            bcc_addrs       TEXT DEFAULT '',
+            subject         TEXT DEFAULT '',
+            body_text       TEXT DEFAULT '',
+            body_html       TEXT DEFAULT '',
+            attachments     TEXT DEFAULT '{}',
+            in_reply_to     TEXT DEFAULT '',
+            "references"    TEXT DEFAULT '',
+            is_local_only   INTEGER DEFAULT 1,
+            is_syncing      INTEGER DEFAULT 0,
+            created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            synced_at       TEXT,
+            UNIQUE(account_id, message_id)
+        )""",
+        """CREATE INDEX IF NOT EXISTS idx_drafts_account ON drafts(account_id, updated_at)""",
+        """CREATE INDEX IF NOT EXISTS idx_drafts_sync ON drafts(is_local_only, is_syncing)""",
+    ],
+    9: [
+        # OAuth2 token cache 持久化
+        """CREATE TABLE IF NOT EXISTS oauth_tokens (
+            id              INTEGER PRIMARY KEY,
+            account_id      INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            provider        TEXT NOT NULL,
+            access_token    TEXT NOT NULL,
+            refresh_token   TEXT DEFAULT '',
+            token_type      TEXT DEFAULT 'Bearer',
+            scope           TEXT DEFAULT '',
+            expires_at      TEXT,
+            created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(account_id, provider)
+        )""",
     ],
 }

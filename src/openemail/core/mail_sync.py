@@ -166,10 +166,16 @@ class IdleWorker(QThread):
     new_mail_notification = pyqtSignal(int, str, str)
     idle_error = pyqtSignal(int, str)
 
+    IDLE_RESET_SECONDS = 1740  # 29 minutes per RFC 2177
+    RECONNECT_DELAY_SECONDS = 30
+    NOOP_POLL_INTERVAL_SECONDS = 60
+    MAX_RECONNECT_ATTEMPTS = 5
+
     def __init__(self, account_id: int, parent=None) -> None:
         super().__init__(parent)
         self._account_id = account_id
         self._running = False
+        self._idle_supported = True
 
     def run(self) -> None:
         self._running = True
@@ -187,25 +193,90 @@ class IdleWorker(QThread):
         if account is None or account.protocol != "imap":
             return
 
-        client = IMAPClient(account)
-        if not await client.connect():
-            self.idle_error.emit(self._account_id, "Cannot connect for IDLE")
-            return
+        reconnect_attempts = 0
+        while self._running:
+            try:
+                client = IMAPClient(account)
+                if not await client.connect():
+                    raise ConnectionError("Cannot connect for IDLE")
+
+                self._idle_supported = await self._check_idle_capability(client)
+                reconnect_attempts = 0
+
+                if self._idle_supported:
+                    await self._do_idle_loop(client, account)
+                else:
+                    await self._do_noop_loop(client, account)
+
+            except Exception as e:
+                if not self._running:
+                    break
+                reconnect_attempts += 1
+                self.idle_error.emit(self._account_id, str(e))
+                if reconnect_attempts >= self.MAX_RECONNECT_ATTEMPTS:
+                    logger.error(
+                        "IDLE max reconnect attempts reached for account %d",
+                        self._account_id,
+                    )
+                    break
+                await asyncio.sleep(self.RECONNECT_DELAY_SECONDS)
+
+    async def _check_idle_capability(self, client: IMAPClient) -> bool:
+        try:
+            if hasattr(client._client, "capability"):
+                caps = await client._client.capability()
+                if caps and "IDLE" in str(caps).upper():
+                    return True
+            return False
+        except Exception:
+            return False
+
+    async def _do_idle_loop(self, client: IMAPClient, account: Account) -> None:
+        import time
 
         try:
             while self._running:
+                idle_start = time.monotonic()
                 try:
-                    results = await client.idle("INBOX", timeout=300)
+                    results = await client.idle(
+                        "INBOX", timeout=self.IDLE_RESET_SECONDS
+                    )
                     if results and self._running:
                         self.new_mail_notification.emit(
                             self._account_id, account.email, "New mail received"
                         )
                 except Exception as e:
-                    if self._running:
-                        self.idle_error.emit(self._account_id, str(e))
-                        await asyncio.sleep(30)
-        finally:
-            await client.disconnect()
+                    if not self._running:
+                        break
+                    self.idle_error.emit(self._account_id, str(e))
+                    raise
+
+                elapsed = time.monotonic() - idle_start
+                if elapsed >= self.IDLE_RESET_SECONDS - 10:
+                    logger.debug("IDLE 29min reset for account %d", self._account_id)
+        except Exception:
+            raise
+
+    async def _do_noop_loop(self, client: IMAPClient, account: Account) -> None:
+        logger.info(
+            "IDLE not supported, falling back to NOOP polling for account %d",
+            self._account_id,
+        )
+        try:
+            while self._running:
+                try:
+                    if hasattr(client._client, "noop"):
+                        await client._client.noop()
+                    await asyncio.sleep(self.NOOP_POLL_INTERVAL_SECONDS)
+                    self.new_mail_notification.emit(
+                        self._account_id, account.email, "Poll check"
+                    )
+                except Exception as e:
+                    if not self._running:
+                        break
+                    raise
+        except Exception:
+            raise
 
     def stop(self) -> None:
         self._running = False
@@ -245,8 +316,20 @@ class MailSyncManager:
         ):
             return
         worker = IdleWorker(account_id)
+        worker.new_mail_notification.connect(self._on_new_mail_notification)
         self._idle_workers[account_id] = worker
         worker.start()
+
+    def _on_new_mail_notification(
+        self, account_id: int, account_email: str, message: str
+    ) -> None:
+        from openemail.utils.desktop_notifier import desktop_notifier
+
+        desktop_notifier.notify_new_mail(
+            sender="New Mail",
+            subject=message,
+            account_email=account_email,
+        )
 
     def stop_idle(self, account_id: int) -> None:
         worker = self._idle_workers.pop(account_id, None)

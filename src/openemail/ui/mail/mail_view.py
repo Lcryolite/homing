@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from openemail.utils.i18n import get_string
 
 from openemail.core.mail_parser import MailParser
 from openemail.models.email import Email
@@ -194,13 +195,21 @@ class MailViewWidget(QWidget):
         self._header_area.setVisible(True)
         self._body_view.setVisible(True)
 
-        self._subject_label.setText(email_obj.subject or "(无主题)")
-        self._from_label.setText(f"发件人: {email_obj.display_sender}")
-        self._to_label.setText(f"收件人: {', '.join(email_obj.to_list)}")
+        self._subject_label.setText(
+            email_obj.subject or get_string("MailView", "no_subject")
+        )
+        self._from_label.setText(
+            get_string("MailView", "label_from").format(email_obj.display_sender)
+        )
+        self._to_label.setText(
+            get_string("MailView", "label_to").format(", ".join(email_obj.to_list))
+        )
         self._date_label.setText(email_obj.date)
 
         if email_obj.is_spam:
-            self._spam_label.setText(f"垃圾邮件: {email_obj.spam_reason}")
+            self._spam_label.setText(
+                get_string("MailView", "spam_label").format(email_obj.spam_reason)
+            )
             self._spam_label.setVisible(True)
         else:
             self._spam_label.setVisible(False)

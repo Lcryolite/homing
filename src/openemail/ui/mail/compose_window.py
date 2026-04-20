@@ -21,11 +21,13 @@ from PyQt6.QtWidgets import (
 
 from openemail.core.mail_builder import MailBuilder
 from openemail.core.smtp_client import SMTPClient
+from openemail.core.draft_autosave import DraftAutoSave
 from openemail.models.account import Account
 from openemail.models.email import Email
 from openemail.core.mail_parser import MailParser
 from openemail.storage.mail_store import mail_store
 from openemail.ui.mail.attachment_manager import AttachmentManager
+from openemail.utils.i18n import get_string
 
 
 class ComposeWindowEnhanced(QDialog):
@@ -45,10 +47,11 @@ class ComposeWindow(QDialog):
         self._reply_to_email: Email | None = None
         self._forward_email: Email | None = None
         self._attachments: list[str] = []
+        self._autosave = DraftAutoSave(account.id, self)
         self._setup_ui()
 
     def _setup_ui(self) -> None:
-        self.setWindowTitle("写邮件")
+        self.setWindowTitle(get_string("ComposeWindow", "window_title_compose"))
         self.setMinimumSize(700, 500)
         self.resize(900, 700)
 
@@ -261,7 +264,7 @@ class ComposeWindow(QDialog):
         self._save_draft_btn.clicked.connect(self._save_draft)
         btn_layout.addWidget(self._save_draft_btn)
 
-        self._send_btn = QPushButton("发送")
+        self._send_btn = QPushButton(get_string("ComposeWindow", "btn_send"))
         self._send_btn.setProperty("class", "primary")
         self._send_btn.setFixedSize(100, 28)
         self._send_btn.clicked.connect(self._on_send)
@@ -273,6 +276,27 @@ class ComposeWindow(QDialog):
         btn_layout.addWidget(cancel_btn)
 
         main_layout.addWidget(bottom_buttons)
+
+        self._to_field.textChanged.connect(self._on_content_changed)
+        self._cc_field.textChanged.connect(self._on_content_changed)
+        self._subject_field.textChanged.connect(self._on_content_changed)
+        self._body_edit.textChanged.connect(self._on_content_changed)
+
+        self._autosave.update_content(from_addr=self._account.email)
+        self._autosave.start()
+
+    def _on_content_changed(self) -> None:
+        self._autosave.update_content(
+            from_addr=self._account.email,
+            to_addrs=self._to_field.text().strip(),
+            cc_addrs=self._cc_field.text().strip(),
+            subject=self._subject_field.text().strip(),
+            body_text=self._body_edit.toPlainText(),
+        )
+
+    def reject(self) -> None:
+        self._autosave.stop()
+        super().reject()
 
     def _on_attachments_changed(self, attachments: list[str]) -> None:
         """附件变化时更新"""
@@ -293,14 +317,35 @@ class ComposeWindow(QDialog):
         )
 
     def _save_draft(self) -> None:
-        """保存草稿（预留功能）"""
-        from PyQt6.QtWidgets import QMessageBox
+        """保存草稿到本地数据库"""
+        self._autosave.update_content(
+            from_addr=self._account.email,
+            to_addrs=self._to_field.text().strip(),
+            cc_addrs=self._cc_field.text().strip(),
+            subject=self._subject_field.text().strip(),
+            body_text=self._body_edit.toPlainText(),
+        )
+        draft_id = self._autosave.save_now()
+        if draft_id:
+            from PyQt6.QtWidgets import QMessageBox
 
-        QMessageBox.information(self, "提示", "草稿功能开发中...")
+            QMessageBox.information(
+                self,
+                get_string("ComposeWindow", "draft_saved"),
+                get_string("ComposeWindow", "draft_saved_local"),
+            )
+        else:
+            from PyQt6.QtWidgets import QMessageBox
+
+            QMessageBox.warning(
+                self,
+                get_string("ComposeWindow", "draft_save_failed"),
+                get_string("ComposeWindow", "draft_save_failed_msg"),
+            )
 
     def set_reply(self, email_obj: Email, reply_all: bool = False) -> None:
         self._reply_to_email = email_obj
-        self.setWindowTitle("回复邮件")
+        self.setWindowTitle(get_string("ComposeWindow", "window_title_reply"))
 
         to_addrs = []
         if reply_all:
@@ -332,7 +377,7 @@ class ComposeWindow(QDialog):
 
     def set_forward(self, email_obj: Email) -> None:
         self._forward_email = email_obj
-        self.setWindowTitle("转发邮件")
+        self.setWindowTitle(get_string("ComposeWindow", "window_title_forward"))
 
         self._subject_field.setText(f"Fwd: {email_obj.subject}")
 
@@ -385,11 +430,15 @@ class ComposeWindow(QDialog):
             if "@" not in addr or "." not in addr.split("@")[1]:
                 from PyQt6.QtWidgets import QMessageBox
 
-                QMessageBox.warning(self, "格式错误", f"邮箱地址格式错误: {addr}")
+                QMessageBox.warning(
+                    self,
+                    get_string("ComposeWindow", "format_error"),
+                    get_string("ComposeWindow", "invalid_email").format(addr),
+                )
                 return
 
         self._send_btn.setEnabled(False)
-        self._send_btn.setText("发送中...")
+        self._send_btn.setText(get_string("ComposeWindow", "btn_sending"))
 
         # 在后台线程中发送邮件，避免阻塞UI
         import threading
@@ -471,6 +520,7 @@ class ComposeWindow(QDialog):
             if success:
 
                 def _on_success():
+                    self._autosave.delete_draft()
                     self.sent.emit()
                     self.accept()
 
@@ -481,8 +531,12 @@ class ComposeWindow(QDialog):
                     from PyQt6.QtWidgets import QMessageBox
 
                     self._send_btn.setEnabled(True)
-                    self._send_btn.setText("发送")
-                    QMessageBox.critical(self, "发送失败", "邮件发送失败，请稍后重试")
+                    self._send_btn.setText(get_string("ComposeWindow", "btn_send"))
+                    QMessageBox.critical(
+                        self,
+                        get_string("ComposeWindow", "send_failed"),
+                        get_string("ComposeWindow", "send_failed_msg"),
+                    )
 
                 QTimer.singleShot(0, _on_failure)
 
@@ -494,8 +548,12 @@ class ComposeWindow(QDialog):
                 from PyQt6.QtWidgets import QMessageBox
 
                 self._send_btn.setEnabled(True)
-                self._send_btn.setText("发送")
-                QMessageBox.critical(self, "发送错误", f"发送过程中发生错误:\n{str(e)}")
+                self._send_btn.setText(get_string("ComposeWindow", "btn_send"))
+                QMessageBox.critical(
+                    self,
+                    get_string("ComposeWindow", "send_error"),
+                    f"发送过程中发生错误:\n{str(e)}",
+                )
 
             QTimer.singleShot(0, _on_exception)
 

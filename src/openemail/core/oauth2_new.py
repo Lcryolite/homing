@@ -266,7 +266,7 @@ class OAuthAuthenticator:
         "microsoft": {
             "authorize_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
             "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-            "scope": "https://outlook.office365.com/IMAP.AccessAsUser.All https://outlook.office365.com/SMTP.Send offline_access",
+            "scope": "https://outlook.office365.com/IMAP.AccessAsUser.All https://outlook.office365.com/SMTP.Send https://outlook.office365.com/POP.AccessAsUser.All offline_access",
         },
     }
 
@@ -296,8 +296,8 @@ class OAuthAuthenticator:
         else:
             logger.warning("Provider %s 未配置OAuth凭据", provider)
 
-    def set_client_credentials(self, client_id: str, client_secret: str) -> None:
-        """设置客户端凭据"""
+    def set_client_credentials(self, client_id: str, client_secret: str = "") -> None:
+        """设置客户端凭据（Microsoft public-client 允许空 client_secret）"""
         self.config["client_id"] = client_id
         self.config["client_secret"] = client_secret
 
@@ -529,7 +529,7 @@ class OAuthAuthenticator:
 
     @staticmethod
     def apply_to_account(account: Account, tokens: dict[str, str]) -> None:
-        """将token信息应用到账户"""
+        """将token信息应用到账户并持久化到数据库"""
         account.oauth_token = tokens.get("access_token", "")
         account.oauth_refresh = tokens.get("refresh_token", "")
         account.token_expires_at = tokens.get("expires_at", "")
@@ -540,10 +540,73 @@ class OAuthAuthenticator:
             account.last_verified_at = __import__("datetime").datetime.now().isoformat()
         account.save()
 
+        if account.id and account.oauth_provider:
+            OAuthAuthenticator.save_token_cache(
+                account.id, account.oauth_provider, tokens
+            )
+
     @staticmethod
     def build_xoauth2_string(email: str, access_token: str) -> str:
         """构建XOAUTH2认证字符串（原始格式，imaplib.authenticate会自动base64编码）"""
         return f"user={email}\x01auth=Bearer {access_token}\x01\x01"
+
+    @staticmethod
+    def save_token_cache(
+        account_id: int, provider: str, tokens: dict[str, str]
+    ) -> None:
+        """持久化 token cache 到数据库"""
+        from openemail.storage.database import db
+        from datetime import datetime
+
+        now = datetime.now().isoformat()
+        data = {
+            "account_id": account_id,
+            "provider": provider,
+            "access_token": tokens.get("access_token", ""),
+            "refresh_token": tokens.get("refresh_token", ""),
+            "token_type": tokens.get("token_type", "Bearer"),
+            "scope": tokens.get("scope", ""),
+            "expires_at": tokens.get("expires_at", ""),
+            "updated_at": now,
+        }
+
+        existing = db.fetchone(
+            "SELECT id FROM oauth_tokens WHERE account_id = ? AND provider = ?",
+            (account_id, provider),
+        )
+        if existing:
+            db.update("oauth_tokens", data, "id = ?", (existing["id"],))
+        else:
+            data["created_at"] = now
+            db.insert("oauth_tokens", data)
+
+    @staticmethod
+    def load_token_cache(account_id: int, provider: str) -> Optional[dict[str, str]]:
+        """从数据库加载 token cache"""
+        from openemail.storage.database import db
+
+        row = db.fetchone(
+            "SELECT * FROM oauth_tokens WHERE account_id = ? AND provider = ?",
+            (account_id, provider),
+        )
+        if not row:
+            return None
+        return {
+            "access_token": row["access_token"],
+            "refresh_token": row["refresh_token"] or "",
+            "token_type": row["token_type"] or "Bearer",
+            "scope": row["scope"] or "",
+            "expires_at": row["expires_at"] or "",
+        }
+
+    @staticmethod
+    def delete_token_cache(account_id: int, provider: str) -> None:
+        """删除 token cache"""
+        from openemail.storage.database import db
+
+        db.delete(
+            "oauth_tokens", "account_id = ? AND provider = ?", (account_id, provider)
+        )
 
 
 class OAuthManager:
