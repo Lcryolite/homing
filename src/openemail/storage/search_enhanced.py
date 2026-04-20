@@ -260,7 +260,7 @@ class EnhancedSearchEngine:
         if "in:" in query.lower():
             from openemail.models.folder import Folder
 
-            folders = Folder.get_all(account_id)
+            folders = Folder.get_by_account(account_id)
 
             folder_term = query.lower().split("in:")[-1].strip()
             for folder in folders:
@@ -422,66 +422,60 @@ class EnhancedSearchEngine:
     @staticmethod
     def _parse_advanced_query(query: str) -> Tuple[Dict[str, Any], List[str]]:
         """解析高级搜索查询"""
-        filters = {}
-        search_terms = []
+        filters: Dict[str, Any] = {}
+        remaining = query
 
-        # 定义搜索模式
-        patterns = {
-            "from": r'from:([^\s"\']+|"[^"]+"|\'[^\']+\')',
-            "to": r'to:([^\s"\']+|"[^"]+"|\'[^\']+\')',
-            "subject": r'subject:([^\s"\']+|"[^"]+"|\'[^\']+\')',
-            "has": r'has:([^\s"\']+|"[^"]+"|\'[^\']+\')',
-            "is": r'is:([^\s"\']+|"[^"]+"|\'[^\']+\')',
-            "after": r"after:(\d{4}-\d{2}-\d{2})",
-            "before": r"before:(\d{4}-\d{2}-\d{2})",
-            "in": r'in:([^\s"\']+|"[^"]+"|\'[^\']+\')',
-        }
+        # All filter keyword prefixes for lookahead
+        _KW = r'(?:from|to|subject|has|is|after|before|in):'
+        _quoted = r'"[^"]*"|\'[^\']*\''
+        _word = r'\S+'
 
-        remaining_query = query
+        # 1) Text filters: capture until next keyword or end (respecting quotes)
+        for key, fkey in [("from", "from"), ("to", "to"), ("subject", "subject")]:
+            pattern = rf'{key}:({_quoted}|.+?)(?=\s*(?:{_KW})|$)'
+            for m in re.finditer(pattern, remaining, re.IGNORECASE):
+                val = m.group(1).strip().strip('"\'')
+                if val:
+                    filters[fkey] = val
 
-        # 提取各种过滤器
-        for key, pattern in patterns.items():
-            matches = re.findall(pattern, remaining_query, re.IGNORECASE)
-            for match in matches:
-                # 清理引号
-                match_clean = match.strip("\"'")
+        # 2) has:attachment
+        for m in re.finditer(rf'has:({_word})', remaining, re.IGNORECASE):
+            if m.group(1).lower() in ("attachment", "attachments"):
+                filters["has_attachment"] = True
 
-                if key == "from":
-                    filters["from"] = match_clean
-                elif key == "to":
-                    filters["to"] = match_clean
-                elif key == "subject":
-                    filters["subject"] = match_clean
-                elif key == "has":
-                    if match_clean.lower() in ["attachment", "attachments"]:
-                        filters["has_attachment"] = True
-                elif key == "is":
-                    if match_clean.lower() in ["read", "unread"]:
-                        filters["is_read"] = match_clean.lower() == "read"
-                    elif match_clean.lower() == "flagged":
-                        filters["is_flagged"] = True
-                    elif match_clean.lower() == "spam":
-                        filters["is_spam"] = True
-                elif key == "after":
-                    filters["after_date"] = match_clean
-                elif key == "before":
-                    filters["before_date"] = match_clean
-                elif key == "in":
-                    filters["folder"] = match_clean
+        # 3) is:read/unread/flagged/spam
+        for m in re.finditer(rf'is:({_word})', remaining, re.IGNORECASE):
+            val = m.group(1).lower()
+            if val in ("read", "unread"):
+                filters["is_read"] = val == "read"
+            elif val == "flagged":
+                filters["is_flagged"] = True
+            elif val == "spam":
+                filters["is_spam"] = True
 
-                # 从查询中移除已匹配的部分
-                remaining_query = re.sub(
-                    pattern, "", remaining_query, flags=re.IGNORECASE
-                )
+        # 4) after:/before: date filters
+        for m in re.finditer(r'after:(\d{4}-\d{2}-\d{2})', remaining, re.IGNORECASE):
+            filters["after_date"] = m.group(1)
+        for m in re.finditer(r'before:(\d{4}-\d{2}-\d{2})', remaining, re.IGNORECASE):
+            filters["before_date"] = m.group(1)
 
-        # 剩余部分作为普通搜索词
-        remaining_query = remaining_query.strip()
-        if remaining_query:
-            # 分割为独立的搜索词
-            terms = re.findall(r'[^\s"\']+|"[^"]+"|\'[^\']+\'', remaining_query)
+        # 5) in:folder
+        for m in re.finditer(rf'in:({_word})', remaining, re.IGNORECASE):
+            filters["folder"] = m.group(1)
+
+        # Strip all filter expressions from remaining query
+        remaining = re.sub(rf'(?:from|to|subject):(?:{_quoted}|.+?)(?=\s*(?:{_KW})|$)', '', remaining, flags=re.IGNORECASE)
+        remaining = re.sub(r'(?:has|is|in):\S+', '', remaining, flags=re.IGNORECASE)
+        remaining = re.sub(r'(?:after|before):\d{4}-\d{2}-\d{2}', '', remaining, flags=re.IGNORECASE)
+        remaining = remaining.strip()
+
+        # Remaining = search terms
+        search_terms: List[str] = []
+        if remaining:
+            terms = re.findall(r'[^\s"\']+|"[^"]+"|\'[^\']+\'', remaining)
             for term in terms:
-                term_clean = term.strip("\"'")
-                if len(term_clean) > 1:  # 忽略单个字符
+                term_clean = term.strip('"\'' )
+                if len(term_clean) > 1:
                     search_terms.append(term_clean)
 
         return filters, search_terms

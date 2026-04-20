@@ -4,7 +4,8 @@ import asyncio
 import email
 import logging
 from email import policy
-from openemail.core.mail_helpers import decode_header_value, parse_address_list, extract_preview, parsedate_to_datetime
+from email.utils import parsedate_to_datetime
+from openemail.core.mail_helpers import decode_header_value, parse_address_list, extract_preview
 from typing import Any
 
 # 条件导入aioimaplib
