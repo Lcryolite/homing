@@ -25,10 +25,17 @@ def main() -> int:
 
         window.show()
 
-        ret = app.exec()
+ret = app.exec()
+
+        # 停止后台任务管理器
+        from openemail.background.background_manager import background_task_manager
+        background_task_manager.stop()
+
+        # 关闭语义搜索系统
+        from openemail.search.semantic_search import shutdown_semantic_search
+        shutdown_semantic_search()
 
         from openemail.storage.database import db
-
         db.close()
 
         return ret

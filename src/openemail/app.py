@@ -115,6 +115,16 @@ def create_app() -> tuple[QApplication, "MainWindow"]:
 
     db.connect()
 
+    # 启动后台任务管理器（日历提醒等）
+    from openemail.background.background_manager import background_task_manager
+
+    background_task_manager.start()
+
+    # 初始化语义搜索系统
+    from openemail.search.semantic_search import init_semantic_search
+
+    init_semantic_search()
+
     from openemail.ui.main_window import MainWindow
 
     _main_window = MainWindow()
