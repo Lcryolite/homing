@@ -5,6 +5,7 @@ import json
 import os
 
 from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -17,6 +18,8 @@ from PyQt6.QtWidgets import (
     QWidget,
     QTabWidget,
     QFrame,
+    QMenu,
+    QColorDialog,
 )
 
 from openemail.core.mail_builder import MailBuilder
@@ -49,6 +52,7 @@ class ComposeWindow(QDialog):
         self._attachments: list[str] = []
         self._autosave = DraftAutoSave(account.id, self)
         self._setup_ui()
+        self._setup_keyboard_shortcuts()
 
     def _setup_ui(self) -> None:
         self.setWindowTitle(get_string("ComposeWindow", "window_title_compose"))
@@ -182,13 +186,13 @@ class ComposeWindow(QDialog):
         """)
         self.tab_widget.addTab(self._body_edit, "纯文本")
 
-        # 富文本编辑器（占位）
-        if False:  # 暂时禁用富文本编辑器
-            html_edit = QTextEdit()
-            html_edit.setPlaceholderText("HTML内容编辑...")
-            html_edit.setHtml("<p>HTML编辑功能开发中...</p>")
-            html_edit.setStyleSheet(self._body_edit.styleSheet())
-            self.tab_widget.addTab(html_edit, "HTML")
+        # 富文本编辑器
+        self._html_edit = QTextEdit()
+        self._html_edit.setPlaceholderText("在此输入邮件正文（支持富文本格式）...")
+        self._html_edit.setAcceptRichText(True)
+        self._html_edit.setStyleSheet(self._body_edit.styleSheet())
+        self.tab_widget.addTab(self._html_edit, "富文本")
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
         editor_layout.addWidget(self.tab_widget)
         splitter.addWidget(editor_widget)
@@ -239,16 +243,31 @@ class ComposeWindow(QDialog):
         format_layout = QHBoxLayout()
         format_layout.setSpacing(6)
 
-        bold_btn = QPushButton("粗体")
-        bold_btn.setFixedSize(60, 28)
-        italic_btn = QPushButton("斜体")
-        italic_btn.setFixedSize(60, 28)
-        underline_btn = QPushButton("下划线")
-        underline_btn.setFixedSize(60, 28)
+        self.bold_btn = QPushButton("粗体")
+        self.bold_btn.setFixedSize(60, 28)
+        self.bold_btn.clicked.connect(self._on_bold)
+        self.italic_btn = QPushButton("斜体")
+        self.italic_btn.setFixedSize(60, 28)
+        self.italic_btn.clicked.connect(self._on_italic)
+        self.underline_btn = QPushButton("下划线")
+        self.underline_btn.setFixedSize(60, 28)
+        self.underline_btn.clicked.connect(self._on_underline)
+        self.bullet_list_btn = QPushButton("• 列表")
+        self.bullet_list_btn.setFixedSize(60, 28)
+        self.bullet_list_btn.clicked.connect(self._on_bullet_list)
+        self.font_color_btn = QPushButton("颜色")
+        self.font_color_btn.setFixedSize(60, 28)
+        self.font_color_btn.clicked.connect(self._on_font_color)
+        self.font_size_combo = QPushButton("大小")
+        self.font_size_combo.setFixedSize(60, 28)
+        self.font_size_combo.setMenu(self._create_font_size_menu())
 
-        format_layout.addWidget(bold_btn)
-        format_layout.addWidget(italic_btn)
-        format_layout.addWidget(underline_btn)
+        format_layout.addWidget(self.bold_btn)
+        format_layout.addWidget(self.italic_btn)
+        format_layout.addWidget(self.underline_btn)
+        format_layout.addWidget(self.bullet_list_btn)
+        format_layout.addWidget(self.font_color_btn)
+        format_layout.addWidget(self.font_size_combo)
         format_layout.addStretch()
 
         btn_layout.addLayout(format_layout, 1)
@@ -281,17 +300,23 @@ class ComposeWindow(QDialog):
         self._cc_field.textChanged.connect(self._on_content_changed)
         self._subject_field.textChanged.connect(self._on_content_changed)
         self._body_edit.textChanged.connect(self._on_content_changed)
+        self._html_edit.textChanged.connect(self._on_content_changed)
 
         self._autosave.update_content(from_addr=self._account.email)
         self._autosave.start()
 
     def _on_content_changed(self) -> None:
+        body_text = (
+            self._html_edit.toPlainText()
+            if self.tab_widget.currentIndex() == 1
+            else self._body_edit.toPlainText()
+        )
         self._autosave.update_content(
             from_addr=self._account.email,
             to_addrs=self._to_field.text().strip(),
             cc_addrs=self._cc_field.text().strip(),
             subject=self._subject_field.text().strip(),
-            body_text=self._body_edit.toPlainText(),
+            body_text=body_text,
         )
 
     def reject(self) -> None:
@@ -318,12 +343,17 @@ class ComposeWindow(QDialog):
 
     def _save_draft(self) -> None:
         """保存草稿到本地数据库"""
+        body_text = (
+            self._html_edit.toPlainText()
+            if self.tab_widget.currentIndex() == 1
+            else self._body_edit.toPlainText()
+        )
         self._autosave.update_content(
             from_addr=self._account.email,
             to_addrs=self._to_field.text().strip(),
             cc_addrs=self._cc_field.text().strip(),
             subject=self._subject_field.text().strip(),
-            body_text=self._body_edit.toPlainText(),
+            body_text=body_text,
         )
         draft_id = self._autosave.save_now()
         if draft_id:
@@ -363,6 +393,9 @@ class ComposeWindow(QDialog):
             f"\n\n--- 在 {email_obj.date}，{email_obj.display_sender} 写道：---\n"
         )
         self._body_edit.setPlainText(reply_prefix)
+        # 如果当前是HTML模式，同步内容
+        if self.tab_widget.currentIndex() == 1:
+            self._html_edit.setHtml(self._convert_plain_to_html(reply_prefix))
 
         if email_obj.file_path:
             raw = mail_store.read_raw(email_obj.file_path)
@@ -374,6 +407,11 @@ class ComposeWindow(QDialog):
                 quoted_lines = [f"> {line}" for line in lines]
                 quoted_text = "\n".join(quoted_lines)
                 self._body_edit.append(quoted_text)
+                # 同步到HTML编辑器
+                if self.tab_widget.currentIndex() == 1:
+                    current_html = self._html_edit.toHtml()
+                    new_content = self._convert_plain_to_html(quoted_text)
+                    self._html_edit.setHtml(current_html + new_content)
 
     def set_forward(self, email_obj: Email) -> None:
         self._forward_email = email_obj
@@ -383,6 +421,9 @@ class ComposeWindow(QDialog):
 
         forward_prefix = f"\n\n--- 转发邮件 ---\n发件人: {email_obj.display_sender}\n收件人: {email_obj.display_to}\n日期: {email_obj.date}\n主题: {email_obj.subject}\n"
         self._body_edit.setPlainText(forward_prefix)
+        # 如果当前是HTML模式，同步内容
+        if self.tab_widget.currentIndex() == 1:
+            self._html_edit.setHtml(self._convert_plain_to_html(forward_prefix))
 
         if email_obj.file_path:
             raw = mail_store.read_raw(email_obj.file_path)
@@ -390,6 +431,11 @@ class ComposeWindow(QDialog):
                 parsed = MailParser.parse_raw(raw)
                 original_text = parsed.text_body or "(HTML邮件，请查看原邮件)"
                 self._body_edit.append(f"\n{original_text}")
+                # 同步到HTML编辑器
+                if self.tab_widget.currentIndex() == 1:
+                    current_html = self._html_edit.toHtml()
+                    new_content = self._convert_plain_to_html(f"\n{original_text}")
+                    self._html_edit.setHtml(current_html + new_content)
 
                 # 如果原邮件有附件，也添加到附件管理器
                 if parsed.attachments:
@@ -423,7 +469,8 @@ class ComposeWindow(QDialog):
         )
 
         subject = self._subject_field.text().strip()
-        body = self._body_edit.toPlainText()
+        is_html_mode = self.tab_widget.currentIndex() == 1
+        body = self._get_html_content_for_sending()
 
         # 验证收件人格式
         for addr in to_addrs + cc_addrs:
@@ -443,14 +490,23 @@ class ComposeWindow(QDialog):
         # 在后台线程中发送邮件，避免阻塞UI
         import threading
 
+        plain_text = self._html_edit.toPlainText() if is_html_mode else ""
+
         thread = threading.Thread(
-            target=self._do_send, args=(to_addrs, cc_addrs, subject, body)
+            target=self._do_send,
+            args=(to_addrs, cc_addrs, subject, body, is_html_mode, plain_text),
         )
         thread.daemon = True
         thread.start()
 
     def _do_send(
-        self, to_addrs: list[str], cc_addrs: list[str], subject: str, body: str
+        self,
+        to_addrs: list[str],
+        cc_addrs: list[str],
+        subject: str,
+        body: str,
+        is_html_mode: bool,
+        plain_text: str,
     ) -> None:
         """实际发送邮件的后台任务"""
         try:
@@ -460,7 +516,13 @@ class ComposeWindow(QDialog):
             if cc_addrs:
                 builder.set_cc(cc_addrs)
             builder.set_subject(subject)
-            builder.set_text_body(body)
+            if is_html_mode:
+                # HTML模式：发送HTML邮件，包含text fallback
+                plain_text = self._html_edit.toPlainText()
+                builder.set_html_body(body).set_text_body(plain_text)
+            else:
+                # 纯文本模式
+                builder.set_text_body(body)
 
             if self._reply_to_email and self._reply_to_email.message_id:
                 builder.set_in_reply_to(self._reply_to_email.message_id)
@@ -501,7 +563,8 @@ class ComposeWindow(QDialog):
                     client.send(
                         to=to_addrs,
                         subject=subject,
-                        body_text=body,
+                        body_text=plain_text if is_html_mode else body,
+                        body_html=body if is_html_mode else "",
                         cc=cc_addrs,
                         in_reply_to=self._reply_to_email.message_id
                         if self._reply_to_email
@@ -556,6 +619,144 @@ class ComposeWindow(QDialog):
                 )
 
             QTimer.singleShot(0, _on_exception)
+
+    def _on_tab_changed(self, index: int) -> None:
+        """标签页切换时更新格式按钮状态"""
+        is_rich_text = index == 1  # 1是富文本标签页
+        self.bold_btn.setEnabled(is_rich_text)
+        self.italic_btn.setEnabled(is_rich_text)
+        self.underline_btn.setEnabled(is_rich_text)
+        self.bullet_list_btn.setEnabled(is_rich_text)
+        self.font_color_btn.setEnabled(is_rich_text)
+        self.font_size_combo.setEnabled(is_rich_text)
+
+        # 如果是切换到富文本，确保内容同步
+        if is_rich_text and self._body_edit.toPlainText():
+            self._html_edit.setHtml(
+                self._convert_plain_to_html(self._body_edit.toPlainText())
+            )
+
+    def _on_bold(self) -> None:
+        """粗体切换"""
+        if self.tab_widget.currentIndex() == 1:  # 富文本模式
+            font = self._html_edit.currentFont()
+            font.setBold(not font.bold())
+            self._html_edit.setCurrentFont(font)
+
+    def _on_italic(self) -> None:
+        """斜体切换"""
+        if self.tab_widget.currentIndex() == 1:  # 富文本模式
+            font = self._html_edit.currentFont()
+            font.setItalic(not font.italic())
+            self._html_edit.setCurrentFont(font)
+
+    def _on_underline(self) -> None:
+        """下划线切换"""
+        if self.tab_widget.currentIndex() == 1:  # 富文本模式
+            font = self._html_edit.currentFont()
+            font.setUnderline(not font.underline())
+            self._html_edit.setCurrentFont(font)
+
+    def _on_bullet_list(self) -> None:
+        """无序列表"""
+        if self.tab_widget.currentIndex() == 1:  # 富文本模式
+            cursor = self._html_edit.textCursor()
+            # 插入HTML无序列表
+            cursor.insertHtml("<ul><li>列表项</li></ul>")
+
+    def _on_font_color(self) -> None:
+        """字体颜色选择"""
+        if self.tab_widget.currentIndex() == 1:  # 富文本模式
+            color = QColorDialog.getColor()
+            if color.isValid():
+                self._html_edit.setTextColor(color)
+
+    def _create_font_size_menu(self) -> QMenu:
+        """创建字体大小菜单"""
+        menu = QMenu()
+        sizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72]
+
+        def create_size_action(size):
+            def set_font_size():
+                if self.tab_widget.currentIndex() == 1:  # 富文本模式
+                    font = self._html_edit.currentFont()
+                    font.setPointSize(size)
+                    self._html_edit.setCurrentFont(font)
+
+            return set_font_size
+
+        for size in sizes:
+            action = menu.addAction(f"{size} px")
+            action.triggered.connect(create_size_action(size))
+
+        return menu
+
+    def _convert_plain_to_html(self, plain_text: str) -> str:
+        """将纯文本转换为简单HTML"""
+        # 保留换行符
+        html_text = plain_text.replace("\n", "<br>")
+        # 替换特殊字符
+        html_text = (
+            html_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+        # 包裹在基本HTML结构中
+        return f"<div style='font-family: sans-serif; font-size: 13px; line-height: 1.5; color: #cdd6f4;'>{html_text}</div>"
+
+    def _get_html_content_for_sending(self) -> str:
+        """获取HTML格式内容用于发送"""
+        if self.tab_widget.currentIndex() == 0:  # 纯文本模式
+            return self._body_edit.toPlainText()
+        else:  # 富文本模式
+            return self._html_edit.toHtml()
+
+    def _setup_keyboard_shortcuts(self) -> None:
+        """Setup keyboard shortcuts for compose window."""
+        # Send shortcuts
+        send_shortcut = QShortcut(QKeySequence("Ctrl+Return"), self)
+        send_shortcut.activated.connect(self._on_send)
+
+        alt_send_shortcut = QShortcut(QKeySequence("Ctrl+Enter"), self)
+        alt_send_shortcut.activated.connect(self._on_send)
+
+        # Save draft shortcut
+        save_shortcut = QShortcut(QKeySequence("Ctrl+S"), self)
+        save_shortcut.activated.connect(self._save_draft)
+
+        # Cancel shortcut
+        cancel_shortcut = QShortcut(QKeySequence("Esc"), self)
+        cancel_shortcut.activated.connect(self.reject)
+
+        # Text formatting shortcuts (only work in rich text mode)
+        bold_shortcut = QShortcut(QKeySequence("Ctrl+B"), self)
+        bold_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        bold_shortcut.activated.connect(self._on_bold)
+
+        italic_shortcut = QShortcut(QKeySequence("Ctrl+I"), self)
+        italic_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        italic_shortcut.activated.connect(self._on_italic)
+
+        underline_shortcut = QShortcut(QKeySequence("Ctrl+U"), self)
+        underline_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        underline_shortcut.activated.connect(self._on_underline)
+
+        # Tab switching shortcuts
+        next_tab_shortcut = QShortcut(QKeySequence("Ctrl+Tab"), self)
+        next_tab_shortcut.activated.connect(self._next_tab)
+
+        prev_tab_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Tab"), self)
+        prev_tab_shortcut.activated.connect(self._prev_tab)
+
+    def _next_tab(self) -> None:
+        """Switch to next tab."""
+        current = self.tab_widget.currentIndex()
+        if current < self.tab_widget.count() - 1:
+            self.tab_widget.setCurrentIndex(current + 1)
+
+    def _prev_tab(self) -> None:
+        """Switch to previous tab."""
+        current = self.tab_widget.currentIndex()
+        if current > 0:
+            self.tab_widget.setCurrentIndex(current - 1)
 
     def _guess_mime_type(self, file_path: str) -> str:
         """猜测文件的MIME类型"""
