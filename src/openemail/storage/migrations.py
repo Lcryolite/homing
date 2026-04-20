@@ -352,12 +352,7 @@ MIGRATIONS: dict[int, list[str]] = {
         """CREATE INDEX IF NOT EXISTS idx_emails_in_reply_to ON emails(in_reply_to)""",
     ],
     11: [
-        # Bayesian spam filter
-        """CREATE TABLE IF NOT EXISTS bayes_tokens (
-            token       TEXT PRIMARY KEY,
-            spam_count  INTEGER DEFAULT 0,
-            ham_count   INTEGER DEFAULT 0
-        )""",
+        # Bayesian spam filter (bayes_tokens table already created in v3)
         """CREATE TABLE IF NOT EXISTS bayes_meta (
             id          INTEGER PRIMARY KEY,
             spam_count  INTEGER DEFAULT 0,

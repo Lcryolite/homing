@@ -212,5 +212,5 @@ class SMTPClient:
 
             return True
         except Exception as e:
-            print(f"SMTP test connection error: {e}")
+            logger.error("SMTP test connection error: %s", e)
             return False

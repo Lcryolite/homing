@@ -252,7 +252,7 @@ class OfflineQueueStats:
             self.success_rate_by_account.clear()
 
             for row in rows:
-                account_id = row["account_id"]
+                account_id = int(row["account_id"])
                 count = row["count"]
                 success_count = row["success_count"] or 0
 

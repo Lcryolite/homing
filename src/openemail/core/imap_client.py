@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import email
 import logging
+
+logger = logging.getLogger(__name__)
 from email import policy
 from email.utils import parsedate_to_datetime
 from openemail.core.mail_helpers import decode_header_value, parse_address_list, extract_preview
@@ -195,7 +197,7 @@ class IMAPClient:
             return True
         except Exception as e:
             error_msg = str(e)
-            print(f"IMAP connect error for {self._account.email}: {error_msg}")
+            logger.error("IMAP connect error for {self._account.email}: {error_msg}")
 
             # 提供更好的错误提示
             if (
@@ -505,5 +507,5 @@ class IMAPClient:
                 preview_text=extract_preview(preview_text),
             )
         except Exception as e:
-            print(f"Error parsing email uid={uid}: {e}")
+            logger.error("Error parsing email uid={uid}: {e}")
             return None
