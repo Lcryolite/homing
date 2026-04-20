@@ -18,13 +18,19 @@
 """
 
 import hashlib
+import hmac
 import json
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+# Pepper for HMAC-based password hashing in validation snapshots.
+# This is NOT for secure password storage - only for change detection.
+# Deterministic (same input = same output) for snapshot comparison.
+_PASSWORD_PEPPER = b"openemail-validation-v1"
 
 @dataclass
 class AccountValidationSnapshot:
@@ -133,7 +139,7 @@ class AccountValidationSnapshot:
         # 计算密码哈希
         password = form_data.get("password", "")
         password_hash = (
-            hashlib.sha256(password.encode()).hexdigest() if password else ""
+            hmac.new(_PASSWORD_PEPPER, password.encode(), hashlib.sha256).hexdigest() if password else ""
         )
 
         return cls(
@@ -170,7 +176,7 @@ class AccountValidationSnapshot:
             eas_path=account.eas_path,
             ssl_mode=account.ssl_mode,
             oauth_provider=account.oauth_provider,
-            password_hash=hashlib.sha256(account.password.encode()).hexdigest()
+            password_hash=hmac.new(_PASSWORD_PEPPER, account.password.encode(), hashlib.sha256).hexdigest()
             if account.password
             else "",
         )
