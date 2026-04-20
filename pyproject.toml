@@ -36,6 +36,7 @@ dependencies = [
     "jieba>=0.42",
     "keyring>=25.0",
     "cryptography>=44.0",
+    "numpy>=1.26",
 ]
 
 [project.scripts]

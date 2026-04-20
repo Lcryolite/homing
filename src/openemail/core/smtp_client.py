@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import smtplib
 import ssl
 from email.message import EmailMessage
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 try:
     import aiosmtplib
@@ -66,6 +69,9 @@ class SMTPClient:
         message = builder.build()
         message_str = message.as_string()
 
+        # Collect all recipients (to + cc + bcc) for SMTP envelope
+        all_recipients = list(to) + list(cc or []) + list(bcc or [])
+
         try:
             use_tls = self._account.ssl_mode == "ssl"
             start_tls = self._account.ssl_mode == "starttls"
@@ -75,11 +81,12 @@ class SMTPClient:
                     self._account.email, self._account.oauth_token
                 )
                 await self._send_with_xoauth2(
-                    message_str, use_tls, start_tls, auth_string
+                    message_str, all_recipients, use_tls, start_tls, auth_string
                 )
             elif AIOSMTPLIB_AVAILABLE:
                 await aiosmtplib.send(
                     message_str,
+                    recipients=all_recipients,
                     hostname=self._account.smtp_host,
                     port=self._account.smtp_port,
                     username=self._account.email,
@@ -88,15 +95,14 @@ class SMTPClient:
                     start_tls=start_tls,
                 )
             else:
-                # 使用标准库smtplib回退
-                await self._send_sync(message_str, use_tls, start_tls)
+                await self._send_sync(message_str, all_recipients, use_tls, start_tls)
             return True
         except Exception as e:
-            print(f"SMTP send error for {self._account.email}: {e}")
+            logger.error("SMTP send error for %s: %s", self._account.email, e)
             return False
 
     async def _send_sync(
-        self, message_str: str, use_tls: bool, start_tls: bool
+        self, message_str: str, recipients: list[str], use_tls: bool, start_tls: bool
     ) -> None:
         """使用标准库smtplib发送邮件"""
         if use_tls:
@@ -116,11 +122,11 @@ class SMTPClient:
                 server.starttls(context=ctx)
 
         server.login(self._account.email, self._account.password)
-        server.sendmail(self._account.email, [], message_str)
+        server.sendmail(self._account.email, recipients, message_str)
         server.quit()
 
     async def _send_with_xoauth2(
-        self, message_str: str, use_tls: bool, start_tls: bool, auth_string: str
+        self, message_str: str, recipients: list[str], use_tls: bool, start_tls: bool, auth_string: str
     ) -> None:
         if AIOSMTPLIB_AVAILABLE:
             smtp = aiosmtplib.SMTP(
@@ -132,7 +138,7 @@ class SMTPClient:
             if start_tls:
                 await smtp.starttls()
             await smtp.auth_xoauth2(self._account.email, auth_string)
-            await smtp.sendmail(self._account.email, [], message_str)
+            await smtp.sendmail(self._account.email, recipients, message_str)
             await smtp.quit()
         else:
             if use_tls:
@@ -152,7 +158,7 @@ class SMTPClient:
                     server.starttls(context=ctx)
             auth_bytes = auth_string.encode("utf-8")
             server.authenticate("XOAUTH2", lambda _: auth_bytes)
-            server.sendmail(self._account.email, [], message_str)
+            server.sendmail(self._account.email, recipients, message_str)
             server.quit()
 
     async def test_connection(self) -> bool:
