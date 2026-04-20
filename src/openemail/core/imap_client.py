@@ -85,8 +85,8 @@ except ImportError:
             if self._conn:
                 try:
                     return self._conn.logout()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Suppressed exception in %s: %s", __name__, e)
             return ("OK", [b"Logout"])
 
         async def idle(self, timeout=300):
@@ -226,8 +226,8 @@ class IMAPClient:
         if self._client:
             try:
                 await self._client.logout()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Suppressed exception in %s: %s", __name__, e)
             self._client = None
 
     async def list_folders(self) -> list[dict[str, Any]]:
@@ -474,8 +474,8 @@ class IMAPClient:
                             preview_text = part.get_payload(decode=True).decode(
                                 charset, errors="replace"
                             )
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug("Suppressed exception in %s: %s", __name__, e)
                         break
             else:
                 if msg.get_content_type() == "text/plain":
@@ -484,8 +484,8 @@ class IMAPClient:
                         preview_text = msg.get_payload(decode=True).decode(
                             charset, errors="replace"
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Suppressed exception in %s: %s", __name__, e)
 
             import json
 

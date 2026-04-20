@@ -38,7 +38,7 @@ class SyncWorker(QThread):
         try:
             self._loop.run_until_complete(self._sync_all_accounts())
         except Exception as e:
-            pass
+            logger.debug("Suppressed exception in %s: %s", __name__, e)
         finally:
             self._loop.close()
 
@@ -128,8 +128,8 @@ class SyncWorker(QThread):
                         self.folder_updated.emit(
                             account.id, folder.name, folder.unread_count
                         )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Suppressed exception in %s: %s", __name__, e)
 
             return total
         finally:
@@ -183,8 +183,8 @@ class IdleWorker(QThread):
         asyncio.set_event_loop(loop)
         try:
             loop.run_until_complete(self._idle_loop())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Suppressed exception in %s: %s", __name__, e)
         finally:
             loop.close()
 

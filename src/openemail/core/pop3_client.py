@@ -113,8 +113,8 @@ class POP3Client:
         if self._client:
             try:
                 self._client.quit()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Suppressed exception in %s: %s", __name__, e)
             self._client = None
 
     def get_message_count(self) -> int:
@@ -225,8 +225,8 @@ class POP3Client:
                             preview_text = part.get_payload(decode=True).decode(
                                 charset, errors="replace"
                             )
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug("Suppressed exception in %s: %s", __name__, e)
                         break
             else:
                 if msg.get_content_type() == "text/plain":
@@ -235,8 +235,8 @@ class POP3Client:
                         preview_text = msg.get_payload(decode=True).decode(
                             charset, errors="replace"
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Suppressed exception in %s: %s", __name__, e)
 
             return Email(
                 account_id=self._account.id,

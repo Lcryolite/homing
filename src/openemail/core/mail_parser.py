@@ -114,16 +114,16 @@ class MailParser:
                         parsed.text_body = part.get_payload(decode=True).decode(
                             charset, errors="replace"
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Suppressed exception in %s: %s", __name__, e)
                 elif content_type == "text/html" and not parsed.html_body:
                     try:
                         charset = part.get_content_charset() or "utf-8"
                         parsed.html_body = part.get_payload(decode=True).decode(
                             charset, errors="replace"
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Suppressed exception in %s: %s", __name__, e)
         else:
             content_type = msg.get_content_type()
             try:
@@ -135,8 +135,8 @@ class MailParser:
                         parsed.html_body = body
                     else:
                         parsed.text_body = body
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Suppressed exception in %s: %s", __name__, e)
 
     @staticmethod
     def _extract_attachments(

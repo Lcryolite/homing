@@ -69,7 +69,7 @@ class ActiveSyncClient:
         """连接到ActiveSync服务器"""
         try:
             if not self.account.eas_host:
-                print(f"ActiveSync主机未配置: {self.account.email}")
+                logger.error("ActiveSync主机未配置: {self.account.email}")
                 return False
 
             # 构建URL
@@ -87,7 +87,7 @@ class ActiveSyncClient:
             return await self._test_connection(url)
 
         except Exception as e:
-            print(f"ActiveSync连接失败 {self.account.email}: {e}")
+            logger.error("ActiveSync连接失败 {self.account.email}: {e}")
             return False
 
     async def _test_connection(self, url: str) -> bool:
@@ -102,7 +102,7 @@ class ActiveSyncClient:
             )
             return response is not None
         except Exception as e:
-            print(f"ActiveSync测试连接失败: {e}")
+            logger.error("ActiveSync测试连接失败: {e}")
             return False
 
     async def _send_command(
@@ -135,11 +135,11 @@ class ActiveSyncClient:
                     content = await response.read()
                     return self._parse_xml_response(content)
                 else:
-                    print(f"ActiveSync命令失败: {response.status}")
+                    logger.error("ActiveSync命令失败: {response.status}")
                     return None
 
         except Exception as e:
-            print(f"发送ActiveSync命令失败: {e}")
+            logger.error("发送ActiveSync命令失败: {e}")
             return None
 
     def _build_xml_request(
@@ -260,7 +260,7 @@ class MockActiveSyncClient(ActiveSyncClient):
 
     async def connect(self) -> bool:
         """模拟连接成功"""
-        print(f"Mock ActiveSync连接: {self.account.email}")
+        logger.info("Mock ActiveSync连接: {self.account.email}")
         self.session = None  # 模拟会话
         return True
 
