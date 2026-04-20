@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import socket
-
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
 
 from openemail.core.operation_queue import operation_queue
@@ -31,11 +29,12 @@ class NetworkMonitor(QObject):
         self._timer.stop()
 
     def _check_network(self) -> None:
-        """检查网络连通性"""
+        """检查网络连通性（DNS 解析，不连接外部 IP）。"""
         try:
-            # 尝试连接公共 DNS
+            # 通过解析公共域名检测网络，不建立实际连接
+            import socket
             socket.setdefaulttimeout(5)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("8.8.8.8", 53))
+            socket.getaddrinfo("dns.google", 443)
             new_state = True
         except Exception:
             new_state = False

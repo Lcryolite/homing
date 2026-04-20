@@ -320,16 +320,31 @@ class IMAPClient:
         return synced
 
     async def _resolve_folder_name(self, folder_name: str) -> str:
-        gmail_map = {
+        """将标准文件夹名映射到服务器实际路径，优先使用 PROVIDERS 配置。"""
+        from openemail.models.account import PROVIDERS
+
+        # 标准名称 → 服务器文件夹名（不含前缀）
+        standard_map = {
             "INBOX": "INBOX",
-            "Sent": '"[Gmail]/Sent Mail"',
-            "Drafts": '"[Gmail]/Drafts"',
-            "Spam": '"[Gmail]/Spam"',
-            "Trash": '"[Gmail]/Trash"',
+            "Sent": "Sent Mail",
+            "Drafts": "Drafts",
+            "Spam": "Spam",
+            "Trash": "Trash",
         }
-        if self._account.imap_host and "gmail" in self._account.imap_host.lower():
-            return gmail_map.get(folder_name, folder_name)
-        return folder_name
+
+        # 通过 imap_host 匹配 provider，取 folder_prefix
+        prefix = ""
+        if self._account.imap_host:
+            host_lower = self._account.imap_host.lower()
+            for _key, cfg in PROVIDERS.items():
+                if cfg.get("imap_host", "").lower() == host_lower:
+                    prefix = cfg.get("folder_prefix", "")
+                    break
+
+        mapped = standard_map.get(folder_name, folder_name)
+        if prefix and mapped != "INBOX":
+            return f'"{prefix}{mapped}"'
+        return mapped
 
     async def fetch_new_emails(self, folder_name: str, folder_id: int) -> list[Email]:
         if not self._client:

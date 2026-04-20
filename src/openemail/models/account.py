@@ -47,6 +47,7 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "ssl_mode": "ssl",
         "auth_type": "app_password",  # 默认使用应用专用密码，更稳定
         "oauth_provider": "google",
+        "folder_prefix": "[Gmail]/",
     },
     "gmail_oauth": {
         "name": "Gmail (OAuth2)",
@@ -58,6 +59,7 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "ssl_mode": "ssl",
         "auth_type": "oauth2",
         "oauth_provider": "google",
+        "folder_prefix": "[Gmail]/",
     },
     "outlook": {
         "name": "Outlook (IMAP)",

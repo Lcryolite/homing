@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from enum import Enum
 
@@ -30,10 +31,12 @@ class OperationQueue:
     """离线操作队列管理器"""
 
     _instance: "OperationQueue" | None = None
+    _lock: threading.Lock = threading.Lock()
 
     def __new__(cls) -> "OperationQueue":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self) -> None:
@@ -153,13 +156,15 @@ class OperationQueue:
                 self._execute_pop3_delete(account, op)
 
     def _execute_imap_operation(self, account: Account, op: dict) -> None:
-        """执行 IMAP 操作"""
+        """执行 IMAP 操作，优先使用连接管理器复用连接。"""
         import asyncio
+
+        from openemail.core.connection_manager import connection_manager
 
         loop = asyncio.new_event_loop()
         try:
-            client = IMAPClient(account)
-            loop.run_until_complete(client.connect())
+            # 通过连接管理器获取（或复用）已连接的 client
+            client = loop.run_until_complete(connection_manager.get_imap(account))
 
             op_type = op["operation_type"]
             uid = op["email_uid"]
@@ -176,8 +181,6 @@ class OperationQueue:
                 loop.run_until_complete(client.mark_as_read(uid, folder))
             elif op_type == "mark_flagged":
                 loop.run_until_complete(client.mark_as_flagged(uid, folder))
-
-            loop.run_until_complete(client.disconnect())
         finally:
             loop.close()
 
