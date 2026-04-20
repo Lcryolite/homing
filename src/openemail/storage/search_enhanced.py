@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 import json
 
 from openemail.models.email import Email
 from openemail.storage.database import db
+
+logger = logging.getLogger(__name__)
 
 
 class EnhancedSearchEngine:
@@ -40,33 +43,47 @@ class EnhancedSearchEngine:
 
         # 首先尝试传统的FTS5搜索
         fts_results = EnhancedSearchEngine._fts_search(
-            search_terms, filters, account_id, folder_id, limit * 2, offset
+            search_terms,
+            filters,
+            account_id,
+            folder_id,
+            limit * 3,
+            offset,  # 获取更多结果用于重排
         )
 
-        # 如果启用了语义搜索，尝试混合结果
-        if semantic_weight > 0 and len(search_terms) > 0 and len(fts_results) < limit:
+        # 如果启用了语义搜索且搜索词足够长，尝试混合搜索
+        if semantic_weight > 0 and len(search_terms) > 0 and len(search_terms[0]) > 2:
             try:
-                semantic_results = EnhancedSearchEngine._semantic_search(
-                    search_terms, account_id, folder_id, limit=limit - len(fts_results)
-                )
+                # 尝试进行混合搜索（重排FTS结果）
+                from openemail.search.semantic_search import semantic_search_manager
 
-                # 合并结果
-                combined_results = list(fts_results) + list(semantic_results)
+                # 检查语义搜索是否可用
+                if semantic_search_manager.is_available():
+                    query_text = " ".join(search_terms)
 
-                # 去重并按相关性排序
-                seen_ids = set()
-                unique_results = []
+                    # 进行混合搜索重排
+                    mixed_results = semantic_search_manager.hybrid_search(
+                        fts_results=fts_results,
+                        query=query_text,
+                        semantic_weight=semantic_weight,
+                        rerank_limit=len(fts_results),
+                    )
 
-                for email in combined_results:
-                    if email.id not in seen_ids:
-                        seen_ids.add(email.id)
-                        unique_results.append(email)
+                    # 返回重排后的结果
+                    return mixed_results[:limit]
+                else:
+                    # 语义搜索不可用，使用FTS结果
+                    logger.debug(
+                        "Semantic search not available, using FTS results only"
+                    )
 
-                return unique_results[:limit]
-
-            except ImportError:
+            except ImportError as e:
                 # 语义搜索库不可用，回退到FTS5
+                logger.debug(f"Semantic search import error: {e}")
                 pass
+            except Exception as e:
+                logger.error(f"Error in hybrid search: {e}")
+                # 出错时回退到FTS结果
 
         return fts_results[:limit]
 
@@ -374,48 +391,33 @@ class EnhancedSearchEngine:
     ) -> List[Email]:
         """语义相似度搜索（需要外部库）"""
         try:
-            # 尝试导入sentence-transformers
-            from sentence_transformers import SentenceTransformer, util
-            import torch
+            # 导入语义搜索服务
+            from openemail.search.semantic_search import semantic_search_service
 
-            # 加载模型（缓存）
-            model = EnhancedSearchEngine._get_semantic_model()
-            if not model:
+            # 创建查询文本
+            query_text = " ".join(search_terms)
+            if not query_text or len(query_text.strip()) < 2:
                 return []
 
-            # 创建查询嵌入
-            query_text = " ".join(search_terms)
-            query_embedding = model.encode([query_text], convert_to_tensor=True)
-
-            # 从数据库获取已有嵌入（这里需要扩展数据库存储嵌入）
-            # 暂时先返回空结果，需要先实现邮件嵌入存储
-            return []
-
-        except ImportError:
-            # 库不可用，不提供语义搜索
-            print(
-                "语义搜索需要sentence-transformers库: pip install sentence-transformers"
+            # 执行语义搜索
+            semantic_results = semantic_search_service.search_semantic_only(
+                query=query_text,
+                account_id=account_id,
+                folder_id=folder_id,
+                limit=limit * 2,  # 搜索多一些，用于后续过滤
             )
+
+            # 提取邮件列表
+            emails = [email for email, _ in semantic_results]
+            return emails[:limit]
+
+        except ImportError as e:
+            # 库不可用，不提供语义搜索
+            logger.warning(f"Semantic search requires additional libraries: {e}")
             return []
         except Exception as e:
-            print(f"语义搜索错误: {e}")
+            logger.error(f"Semantic search error: {e}")
             return []
-
-    @staticmethod
-    def _get_semantic_model():
-        """获取语义模型单例"""
-        try:
-            from sentence_transformers import SentenceTransformer
-
-            if not hasattr(EnhancedSearchEngine, "_semantic_model"):
-                # 使用小型多语言模型，适合中英文
-                EnhancedSearchEngine._semantic_model = SentenceTransformer(
-                    "paraphrase-multilingual-MiniLM-L12-v2"
-                )
-
-            return EnhancedSearchEngine._semantic_model
-        except ImportError:
-            return None
 
     @staticmethod
     def _parse_advanced_query(query: str) -> Tuple[Dict[str, Any], List[str]]:
