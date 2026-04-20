@@ -23,6 +23,10 @@ from openemail.models.account import Account
 from openemail.models.email import Email
 from openemail.models.folder import Folder, SYSTEM_FOLDERS
 from openemail.ui.sidebar import Page, Sidebar
+from openemail.ui.keyboard_shortcuts import (
+    KeyboardShortcutManager,
+    setup_application_shortcuts,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -565,6 +569,7 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._restore_geometry()
         self._check_first_run()
+        self._setup_keyboard_shortcuts()
 
     def _check_first_run(self) -> None:
         """检查是否首次启动（使用新的引导状态逻辑）"""
@@ -694,9 +699,149 @@ class MainWindow(QMainWindow):
         account_settings_action.triggered.connect(self._navigate_to_settings)
         tools_menu.addAction(account_settings_action)
 
+        tools_menu.addSeparator()
+
+        account_cleanup_action = QAction("账户清理工具", self)
+        account_cleanup_action.triggered.connect(self._show_account_cleanup)
+        tools_menu.addAction(account_cleanup_action)
+
         help_menu = menubar.addMenu("帮助")
         about_action = QAction("关于", self)
         help_menu.addAction(about_action)
+
+        # Add keyboard shortcuts help to help menu
+        shortcuts_action = QAction("键盘快捷键", self)
+        shortcuts_action.setShortcut("F1")
+        shortcuts_action.triggered.connect(self._show_keyboard_shortcuts_help)
+        help_menu.addAction(shortcuts_action)
+
+    def _setup_keyboard_shortcuts(self) -> None:
+        """Setup keyboard shortcuts for the main window."""
+        self._shortcut_manager = KeyboardShortcutManager(self)
+
+        # Navigation shortcuts
+        self._shortcut_manager.add_named_shortcut(
+            self, "nav_inbox", lambda: self._navigate_to_folder("inbox")
+        )
+        self._shortcut_manager.add_named_shortcut(
+            self, "nav_sent", lambda: self._navigate_to_folder("sent")
+        )
+        self._shortcut_manager.add_named_shortcut(
+            self, "nav_drafts", lambda: self._navigate_to_folder("drafts")
+        )
+        self._shortcut_manager.add_named_shortcut(
+            self, "nav_trash", lambda: self._navigate_to_folder("trash")
+        )
+        self._shortcut_manager.add_named_shortcut(
+            self, "nav_search", self._focus_search_bar
+        )
+
+        # Mail actions shortcuts (connect to existing methods)
+        self._shortcut_manager.add_named_shortcut(
+            self, "mail_compose", self._show_compose
+        )
+        self._shortcut_manager.add_named_shortcut(self, "mail_refresh", self._sync_all)
+
+        # Selection shortcuts
+        self._shortcut_manager.add_named_shortcut(
+            self, "select_none", self._clear_selection
+        )
+
+        # Create application-wide shortcuts manager
+        setup_application_shortcuts(self)
+
+        logger.info(f"Setup keyboard shortcuts for main window")
+
+    def _show_keyboard_shortcuts_help(self) -> None:
+        """Show keyboard shortcuts help dialog."""
+        from PyQt6.QtWidgets import (
+            QDialog,
+            QVBoxLayout,
+            QLabel,
+            QTableWidget,
+            QTableWidgetItem,
+        )
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("键盘快捷键")
+        dialog.setMinimumSize(500, 400)
+
+        layout = QVBoxLayout(dialog)
+
+        # Create table
+        table = QTableWidget()
+        table.setColumnCount(2)
+        table.setHorizontalHeaderLabels(["快捷键", "功能"])
+
+        # Get list of shortcuts with descriptions
+        shortcuts = [
+            ("Ctrl+Shift+N", "写邮件"),
+            ("C", "写邮件（快速版）"),
+            ("Ctrl+S", "同步所有账户"),
+            ("Alt+1", "切换到收件箱"),
+            ("Alt+2", "切换到已发送"),
+            ("Alt+3", "切换到草稿箱"),
+            ("Alt+4", "切换到垃圾箱"),
+            ("Ctrl+F", "聚焦搜索框"),
+            ("J", "下一个项目"),
+            ("K", "上一个项目"),
+            ("R", "回复邮件"),
+            ("Shift+R", "全部回复"),
+            ("F", "转发邮件"),
+            ("Delete", "删除邮件"),
+            ("E", "归档邮件"),
+            ("Shift+I", "标记为已读"),
+            ("Shift+U", "标记为未读"),
+            ("Shift+S", "切换星标/加旗"),
+            ("!", "标记为垃圾邮件"),
+            ("Ctrl+A", "全选"),
+            ("Esc", "取消选择"),
+            ("Ctrl+Q", "退出应用"),
+            ("F11", "切换全屏"),
+            ("Ctrl+,", "打开设置"),
+            ("F1", "显示快捷键帮助"),
+            ("Enter", "打开选中邮件"),
+            ("Space", "预览选中邮件"),
+        ]
+
+        table.setRowCount(len(shortcuts))
+        for i, (shortcut, description) in enumerate(shortcuts):
+            table.setItem(i, 0, QTableWidgetItem(shortcut))
+            table.setItem(i, 1, QTableWidgetItem(description))
+
+        table.resizeColumnsToContents()
+
+        layout.addWidget(QLabel("常用键盘快捷键:"))
+        layout.addWidget(table)
+
+        dialog.exec()
+
+    def _focus_search_bar(self) -> None:
+        """Focus the search bar."""
+        if hasattr(self, "_search_bar"):
+            self._search_bar.setFocus()
+
+    def _clear_selection(self) -> None:
+        """Clear current selection."""
+        # This will be implemented when we add selection support
+        logger.debug("Clear selection requested (shortcut)")
+
+    def _navigate_to_folder(self, folder_type: str) -> None:
+        """Navigate to a specific folder type."""
+        # Find folder by type and navigate
+        logger.debug(f"Navigate to folder type: {folder_type}")
+
+    def _show_account_cleanup(self) -> None:
+        """显示账户清理工具"""
+        try:
+            from openemail.ui.tools.account_cleanup_dialog import (
+                show_account_cleanup_dialog,
+            )
+
+            show_account_cleanup_dialog(self)
+        except Exception as e:
+            logger.error(f"Failed to show account cleanup dialog: {e}")
+            self._show_error("无法打开账户清理工具", str(e))
 
     def _setup_ui(self) -> None:
         central = QWidget()
