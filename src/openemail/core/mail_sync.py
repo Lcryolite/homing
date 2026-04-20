@@ -429,7 +429,7 @@ class MailSyncManager:
                                 total_synced += 1
 
                         except Exception as e:
-                            print(f"处理ActiveSync邮件失败: {e}")
+                            logger.error("处理ActiveSync邮件失败: %s", e)
 
                     # 更新文件夹计数
                     if emails_data:
@@ -443,7 +443,7 @@ class MailSyncManager:
                 await client.disconnect()
 
         except Exception as e:
-            print(f"ActiveSync同步失败 {account.email}: {e}")
+            logger.error("ActiveSync同步失败 %s: %s", account.email, e)
             return 0
 
 

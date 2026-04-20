@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import logging
 import uuid
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -17,6 +18,8 @@ except ImportError:
     AIOHTTP_AVAILABLE = False
 
 from openemail.models.account import Account
+
+logger = logging.getLogger(__name__)
 
 
 class SyncFolderType(Enum):
@@ -178,7 +181,7 @@ class ActiveSyncClient:
                 return self._parse_folders(response)
             return []
         except Exception as e:
-            print(f"文件夹同步失败: {e}")
+            logger.error("文件夹同步失败: %s", e)
             return []
 
     def _parse_folders(self, xml_response: ET.Element) -> List[Dict[str, Any]]:
@@ -214,7 +217,7 @@ class ActiveSyncClient:
                 return self._parse_email_sync(response)
             return {"sync_key": "", "emails": []}
         except Exception as e:
-            print(f"邮件同步失败: {e}")
+            logger.error("邮件同步失败: %s", e)
             return {"sync_key": "", "emails": []}
 
     def _parse_email_sync(self, xml_response: ET.Element) -> Dict[str, Any]:
