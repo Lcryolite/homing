@@ -5,8 +5,12 @@ import pickle
 import sqlite3
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Any
-import numpy as np
 import os
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 from openemail.storage.database import db
 from openemail.search.embedding_service import embedding_service, EmailEmbedding
