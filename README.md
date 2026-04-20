@@ -10,7 +10,7 @@ OpenEmail integrates email, calendar, contacts, todos, and project management in
 
 ### Email
 
-- **Multi-protocol support** — IMAP, POP3, and Exchange ActiveSync
+- **Multi-protocol support** — IMAP and POP3 (receiving), SMTP (sending); Exchange ActiveSync is an experimental stub (see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md))
 - **Multiple authentication** — Plain password, app-specific password, and OAuth2 (Google / Microsoft)
 - **Provider presets** — One-click setup for Gmail, Outlook, Yahoo, 163, QQ, and more
 - **Connection testing** — Real-time validation of server settings before saving an account; granular error classification (10 categories) with diagnostic suggestions
@@ -64,8 +64,8 @@ OpenEmail integrates email, calendar, contacts, todos, and project management in
 ### From source
 
 ```bash
-git clone https://github.com/Lcryolite/homing.git
-cd homing
+git clone https://github.com/Lcryolite/Open-Email.git
+cd Open-Email
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
