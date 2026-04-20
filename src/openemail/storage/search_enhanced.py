@@ -342,7 +342,13 @@ class EnhancedSearchEngine:
         where_sql = " AND ".join(where_clauses)
 
         sql = f"""
-            SELECT emails.*, emails_fts.rank FROM emails
+            SELECT emails.*,
+                   emails_fts.rank,
+                   snippet(emails_fts, 0, '<b>', '</b>', '...', 30) AS snippet_subject,
+                   snippet(emails_fts, 3, '<b>', '</b>', '...', 60) AS snippet_body,
+                   highlight(emails_fts, 0, '<b>', '</b>') AS highlight_subject,
+                   highlight(emails_fts, 3, '<b>', '</b>') AS highlight_body
+            FROM emails
             JOIN emails_fts ON emails.id = emails_fts.rowid
             WHERE {where_sql}
             ORDER BY emails_fts.rank, emails.date DESC
@@ -351,7 +357,13 @@ class EnhancedSearchEngine:
         params.extend([limit, offset])
 
         rows = db.fetchall(sql, params)
-        return [Email._from_row(r) for r in rows]
+        results = []
+        for r in rows:
+            email = Email._from_row(r)
+            email._search_snippet = r.get("snippet_body", "")
+            email._search_highlight = r.get("highlight_body", "")
+            results.append(email)
+        return results
 
     @staticmethod
     def _semantic_search(

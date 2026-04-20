@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 11
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -326,5 +326,44 @@ MIGRATIONS: dict[int, list[str]] = {
             updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(account_id, provider)
         )""",
+    ],
+    10: [
+        # Email threading support
+        """ALTER TABLE emails ADD COLUMN in_reply_to TEXT DEFAULT ''""",
+        """ALTER TABLE emails ADD COLUMN "references" TEXT DEFAULT ''""",
+        """CREATE TABLE IF NOT EXISTS email_threads (
+            id              INTEGER PRIMARY KEY,
+            account_id      INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            subject         TEXT DEFAULT '',
+            message_count   INTEGER DEFAULT 1,
+            last_date       TEXT,
+            created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )""",
+        """CREATE TABLE IF NOT EXISTS email_thread_members (
+            id              INTEGER PRIMARY KEY,
+            thread_id       INTEGER NOT NULL REFERENCES email_threads(id) ON DELETE CASCADE,
+            email_id        INTEGER NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+            UNIQUE(thread_id, email_id)
+        )""",
+        """CREATE INDEX IF NOT EXISTS idx_threads_account ON email_threads(account_id, last_date)""",
+        """CREATE INDEX IF NOT EXISTS idx_thread_members_thread ON email_thread_members(thread_id)""",
+        """CREATE INDEX IF NOT EXISTS idx_thread_members_email ON email_thread_members(email_id)""",
+        """CREATE INDEX IF NOT EXISTS idx_emails_in_reply_to ON emails(in_reply_to)""",
+    ],
+    11: [
+        # Bayesian spam filter
+        """CREATE TABLE IF NOT EXISTS bayes_tokens (
+            token       TEXT PRIMARY KEY,
+            spam_count  INTEGER DEFAULT 0,
+            ham_count   INTEGER DEFAULT 0
+        )""",
+        """CREATE TABLE IF NOT EXISTS bayes_meta (
+            id          INTEGER PRIMARY KEY,
+            spam_count  INTEGER DEFAULT 0,
+            ham_count   INTEGER DEFAULT 0
+        )""",
+        """CREATE INDEX IF NOT EXISTS idx_bayes_spam ON bayes_tokens(spam_count)""",
+        """CREATE INDEX IF NOT EXISTS idx_bayes_ham ON bayes_tokens(ham_count)""",
     ],
 }

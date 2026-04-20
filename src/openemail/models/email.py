@@ -31,7 +31,11 @@ class Email:
     has_attachment: bool = False
     preview_text: str = ""
     file_path: str = ""
+    in_reply_to: str = ""
+    references: str = ""
     created_at: str = ""
+    _search_snippet: str = ""
+    _search_highlight: str = ""
 
     @property
     def to_list(self) -> list[str]:
@@ -112,6 +116,8 @@ class Email:
             "has_attachment": int(self.has_attachment),
             "preview_text": self.preview_text,
             "file_path": self.file_path,
+            "in_reply_to": self.in_reply_to,
+            "references": self.references,
         }
         if self.id == 0:
             self.id = db.insert("emails", data)
@@ -224,6 +230,8 @@ class Email:
             has_attachment=bool(row["has_attachment"]),
             preview_text=row["preview_text"] or "",
             file_path=row["file_path"] or "",
+            in_reply_to=row["in_reply_to"] if "in_reply_to" in row.keys() else "",
+            references=row["references"] if "references" in row.keys() else "",
             created_at=row["created_at"] or "",
         )
 
