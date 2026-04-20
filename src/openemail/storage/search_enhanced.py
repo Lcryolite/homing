@@ -313,13 +313,21 @@ class EnhancedSearchEngine:
         offset: int,
     ) -> List[Email]:
         """传统FTS5搜索"""
-        if not search_terms:
-            fts_query = "*"
-        else:
+        # When no search terms and no filters, return empty to avoid invalid MATCH '*'
+        if not search_terms and not filters and not folder_id:
+            return []
+
+        use_fts = bool(search_terms)
+        if use_fts:
             fts_query = " AND ".join([f'"{term}"' for term in search_terms])
 
-        where_clauses = ["emails_fts MATCH ?"]
-        params = [fts_query]
+        if use_fts:
+            where_clauses = ["emails_fts MATCH ?"]
+            params: list = [fts_query]
+        else:
+            # No text search - query emails table directly
+            where_clauses = ["1=1"]
+            params = []
 
         if account_id:
             where_clauses.append("emails.account_id = ?")
@@ -358,19 +366,29 @@ class EnhancedSearchEngine:
 
         where_sql = " AND ".join(where_clauses)
 
-        sql = f"""
-            SELECT emails.*,
-                   emails_fts.rank,
-                   snippet(emails_fts, 0, '<b>', '</b>', '...', 30) AS snippet_subject,
-                   snippet(emails_fts, 3, '<b>', '</b>', '...', 60) AS snippet_body,
-                   highlight(emails_fts, 0, '<b>', '</b>') AS highlight_subject,
-                   highlight(emails_fts, 3, '<b>', '</b>') AS highlight_body
-            FROM emails
-            JOIN emails_fts ON emails.id = emails_fts.rowid
-            WHERE {where_sql}
-            ORDER BY emails_fts.rank, emails.date DESC
-            LIMIT ? OFFSET ?
-        """
+        if use_fts:
+            sql = f"""
+                SELECT emails.*,
+                       emails_fts.rank,
+                       snippet(emails_fts, 0, '<b>', '</b>', '...', 30) AS snippet_subject,
+                       snippet(emails_fts, 3, '<b>', '</b>', '...', 60) AS snippet_body,
+                       highlight(emails_fts, 0, '<b>', '</b>') AS highlight_subject,
+                       highlight(emails_fts, 3, '<b>', '</b>') AS highlight_body
+                FROM emails
+                JOIN emails_fts ON emails.id = emails_fts.rowid
+                WHERE {where_sql}
+                ORDER BY emails_fts.rank, emails.date DESC
+                LIMIT ? OFFSET ?
+            """
+        else:
+            # No FTS - simple query on emails table
+            sql = f"""
+                SELECT emails.*
+                FROM emails
+                WHERE {where_sql}
+                ORDER BY emails.date DESC
+                LIMIT ? OFFSET ?
+            """
         params.extend([limit, offset])
 
         rows = db.fetchall(sql, params)
