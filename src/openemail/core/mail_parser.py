@@ -13,9 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from openemail.storage.mail_store import mail_store
+from openemail.core.mail_helpers import decode_header_value, parse_address_list
 
 
-def _decode_header_value(value: str | None) -> str:
+def decode_header_value(value: str | None) -> str:
     if not value:
         return ""
     parts = decode_header(value)
@@ -59,14 +60,14 @@ class MailParser:
         msg = email.message_from_bytes(raw, policy=policy.default)
         parsed = ParsedEmail()
 
-        parsed.subject = _decode_header_value(msg.get("Subject", ""))
+        parsed.subject = decode_header_value(msg.get("Subject", ""))
         from_header = msg.get("From", "")
         parsed.sender_name, parsed.sender_addr = parseaddr(from_header)
-        parsed.sender_name = _decode_header_value(parsed.sender_name)
+        parsed.sender_name = decode_header_value(parsed.sender_name)
 
-        parsed.to_addrs = _parse_address_list(msg.get("To", ""))
-        parsed.cc_addrs = _parse_address_list(msg.get("Cc", ""))
-        parsed.bcc_addrs = _parse_address_list(msg.get("Bcc", ""))
+        parsed.to_addrs = parse_address_list(msg.get("To", ""))
+        parsed.cc_addrs = parse_address_list(msg.get("Cc", ""))
+        parsed.bcc_addrs = parse_address_list(msg.get("Bcc", ""))
 
         try:
             dt = parsedate_to_datetime(msg.get("Date", ""))
@@ -148,7 +149,7 @@ class MailParser:
             if disposition in ("attachment", "inline"):
                 filename = part.get_filename()
                 if filename:
-                    filename = _decode_header_value(filename)
+                    filename = decode_header_value(filename)
                     payload = part.get_payload(decode=True)
                     if payload:
                         parsed.attachments.append(
@@ -163,7 +164,7 @@ class MailParser:
                         parsed.has_attachment = True
 
 
-def _parse_address_list(raw: str | None) -> list[str]:
+def parse_address_list(raw: str | None) -> list[str]:
     if not raw:
         return []
     addresses = []

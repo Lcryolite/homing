@@ -4,8 +4,7 @@ import asyncio
 import email
 import logging
 from email import policy
-from email.header import decode_header
-from email.utils import parseaddr, parsedate_to_datetime
+from openemail.core.mail_helpers import decode_header_value, parse_address_list, extract_preview, parsedate_to_datetime
 from typing import Any
 
 # 条件导入aioimaplib
@@ -113,7 +112,7 @@ from openemail.storage.database import db
 from openemail.storage.mail_store import mail_store
 
 
-def _decode_header_value(value: str | None) -> str:
+def decode_header_value(value: str | None) -> str:
     if not value:
         return ""
     parts = decode_header(value)
@@ -126,7 +125,7 @@ def _decode_header_value(value: str | None) -> str:
     return "".join(decoded)
 
 
-def _parse_address_list(raw: str | None) -> list[str]:
+def parse_address_list(raw: str | None) -> list[str]:
     if not raw:
         return []
     addresses = []
@@ -137,7 +136,7 @@ def _parse_address_list(raw: str | None) -> list[str]:
     return addresses
 
 
-def _extract_preview(text: str, max_len: int = 100) -> str:
+def extract_preview(text: str, max_len: int = 100) -> str:
     text = text.replace("\r", "").replace("\n", " ").strip()
     while "  " in text:
         text = text.replace("  ", " ")
@@ -438,14 +437,14 @@ class IMAPClient:
         try:
             msg = email.message_from_bytes(raw, policy=policy.default)
 
-            subject = _decode_header_value(msg.get("Subject", ""))
+            subject = decode_header_value(msg.get("Subject", ""))
             from_header = msg.get("From", "")
             sender_name, sender_addr = parseaddr(from_header)
-            sender_name = _decode_header_value(sender_name)
+            sender_name = decode_header_value(sender_name)
 
-            to_list = _parse_address_list(msg.get("To", ""))
-            cc_list = _parse_address_list(msg.get("Cc", ""))
-            bcc_list = _parse_address_list(msg.get("Bcc", ""))
+            to_list = parse_address_list(msg.get("To", ""))
+            cc_list = parse_address_list(msg.get("Cc", ""))
+            bcc_list = parse_address_list(msg.get("Bcc", ""))
 
             date_str = ""
             try:
@@ -502,7 +501,7 @@ class IMAPClient:
                 size=len(raw),
                 is_read=False,
                 has_attachment=has_attachment,
-                preview_text=_extract_preview(preview_text),
+                preview_text=extract_preview(preview_text),
             )
         except Exception as e:
             print(f"Error parsing email uid={uid}: {e}")
