@@ -204,21 +204,18 @@ class IMAPClient:
                 "username and password not accepted" in error_msg.lower()
                 or "invalid credentials" in error_msg.lower()
             ):
-                print(f"认证失败！请检查用户名和密码是否正确。")
-                print(f"对于Gmail用户：请使用应用专用密码而不是普通密码。")
-                print(f"如何获取应用专用密码：")
-                print(f"1. 登录Gmail账户")
-                print(f"2. 转到账户安全设置")
-                print(f"3. 开启两步验证（如未开启）")
-                print(f"4. 在'应用专用密码'部分生成新密码")
-                print(f"5. 在OpenEmail中使用此密码而非账户密码")
+                logger.warning(
+                    "认证失败！请检查用户名和密码是否正确。"
+                    " 对于Gmail用户：请使用应用专用密码而不是普通密码。"
+                    " 如何获取：登录Gmail -> 安全设置 -> 开启两步验证 -> 生成应用专用密码。"
+                )
             elif "xoauth2" in error_msg.lower():
-                print(f"OAuth2认证失败！Token可能已过期。")
+                logger.warning("OAuth2认证失败！Token可能已过期。")
             elif (
                 "network is unreachable" in error_msg.lower()
                 or "connection refused" in error_msg.lower()
             ):
-                print(f"网络连接失败！请检查网络设置和主机名/端口。")
+                logger.warning("网络连接失败！请检查网络设置和主机名/端口。")
 
             return False
 

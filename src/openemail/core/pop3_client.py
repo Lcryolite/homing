@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import email
+import logging
 import poplib
 import socket
 import ssl
@@ -13,6 +14,8 @@ from typing import Any
 from openemail.models.account import Account
 from openemail.models.email import Email
 from openemail.models.folder import Folder
+
+logger = logging.getLogger(__name__)
 from openemail.storage.mail_store import mail_store
 
 
@@ -138,7 +141,7 @@ class POP3Client:
             _, lines, _ = self._client.retr(msg_num)
             return b"\r\n".join(lines)
         except Exception as e:
-            print(f"POP3 fetch error for msg {msg_num}: {e}")
+            logger.error("POP3 fetch error for msg %d: %s", msg_num, e)
             return None
 
     def delete_message(self, msg_num: int) -> bool:
@@ -256,5 +259,5 @@ class POP3Client:
                 preview_text=extract_preview(preview_text),
             )
         except Exception as e:
-            print(f"Error parsing POP3 email uid={uid}: {e}")
+            logger.error("Error parsing POP3 email uid=%s: %s", uid, e)
             return None
