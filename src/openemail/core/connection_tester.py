@@ -239,7 +239,7 @@ class ConnectionTestWorker(threading.Thread):
                         error_categories.append(
                             ConnectionTestErrorCategory(cat.upper())
                         )
-                    except:
+                    except ValueError:
                         error_categories.append(
                             ConnectionTestErrorCategory.UNKNOWN_ERROR
                         )
@@ -249,7 +249,7 @@ class ConnectionTestWorker(threading.Thread):
                 if level_str:
                     try:
                         level = ConnectionTestLevel(level_str.upper())
-                    except:
+                    except ValueError:
                         level = ConnectionTestLevel.UNKNOWN
 
             return ConnectionTestResult(
@@ -873,9 +873,9 @@ class ConnectionTestWorker(threading.Thread):
             if isinstance(protocol, str):
                 try:
                     protocol_enums.append(ProtocolType(protocol.lower()))
-                except:
+                except ValueError:
                     # 如果无法转换，跳过该协议
-                    logger.warning(f"跳过未知协议类型: {protocol}")
+                    logger.warning("跳过未知协议类型: %s", protocol)
             else:
                 protocol_enums.append(protocol)
 
