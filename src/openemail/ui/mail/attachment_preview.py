@@ -160,7 +160,7 @@ class AttachmentPreviewDialog(QDialog):
                 return f"{size / (1024 * 1024):.1f} MB"
             else:
                 return f"{size / (1024 * 1024 * 1024):.1f} GB"
-        except:
+        except Exception:
             return "未知大小"
 
     def _load_file(self):
@@ -325,7 +325,7 @@ class AttachmentPreviewDialog(QDialog):
                     hex_scroll.setWidgetResizable(True)
 
                     self.preview_layout.addWidget(hex_scroll)
-        except:
+        except Exception:
             pass
 
         self.progress_bar.hide()
@@ -355,7 +355,7 @@ class AttachmentPreviewDialog(QDialog):
                 hex_lines.append(f"{i:08x}: {hex_part}  |{ascii_part}|")
 
             return "\n".join(hex_lines)
-        except:
+        except Exception:
             return ""
 
     def _show_error(self, message: str):

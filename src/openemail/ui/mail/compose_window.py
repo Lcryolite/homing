@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -31,6 +32,8 @@ from openemail.core.mail_parser import MailParser
 from openemail.storage.mail_store import mail_store
 from openemail.ui.mail.attachment_manager import AttachmentManager
 from openemail.utils.i18n import get_string
+
+logger = logging.getLogger(__name__)
 
 
 class ComposeWindowEnhanced(QDialog):
@@ -455,7 +458,7 @@ class ComposeWindow(QDialog):
                             # 添加到附件管理器
                             self.attachment_manager.add_attachments([tmp_path])
                         except Exception as e:
-                            print(f"无法保存转发附件: {e}")
+                            logger.error("无法保存转发附件: %s", e)
 
     def _on_send(self) -> None:
         to_text = self._to_field.text().strip()
@@ -539,7 +542,7 @@ class ComposeWindow(QDialog):
                         mime_type = self._guess_mime_type(file_path)
                         builder.add_attachment(file_name, data, mime_type)
                     except Exception as e:
-                        print(f"无法添加附件 {file_path}: {e}")
+                        logger.error("无法添加附件 %s: %s", file_path, e)
                         # TODO: 发送到主线程显示错误
 
             # 如果是转发邮件，也包含原邮件的附件
@@ -604,7 +607,7 @@ class ComposeWindow(QDialog):
                 QTimer.singleShot(0, _on_failure)
 
         except Exception as e:
-            print(f"发送异常: {e}")
+            logger.error("发送异常: %s", e)
             from PyQt6.QtCore import QTimer
 
             def _on_exception():

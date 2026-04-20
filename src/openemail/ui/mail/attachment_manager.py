@@ -57,7 +57,7 @@ class AttachmentItem(QFrame):
                 return f"{size / (1024 * 1024):.1f} MB"
             else:
                 return f"{size / (1024 * 1024 * 1024):.1f} GB"
-        except:
+        except Exception:
             return "未知大小"
 
     def _setup_ui(self):
@@ -316,7 +316,7 @@ class AttachmentManager(QWidget):
             # 检查文件大小
             try:
                 file_size = os.path.getsize(file_path)
-            except:
+            except Exception:
                 QMessageBox.warning(
                     self, "错误", f"无法读取文件：{os.path.basename(file_path)}"
                 )
@@ -375,7 +375,7 @@ class AttachmentManager(QWidget):
                 try:
                     file_size = os.path.getsize(file_path)
                     self.total_size -= file_size
-                except:
+                except Exception:
                     pass
 
                 # 删除UI项
@@ -458,6 +458,6 @@ class AttachmentManager(QWidget):
             try:
                 size = os.path.getsize(item.file_path)
                 info_list.append((item.file_name, item.file_type, size))
-            except:
+            except Exception:
                 pass
         return info_list

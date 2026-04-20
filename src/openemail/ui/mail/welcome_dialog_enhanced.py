@@ -859,7 +859,7 @@ class WelcomeDialogEnhanced(QDialog):
             # 保守回退到in_progress状态
             try:
                 settings.onboarding_state = "in_progress"
-            except:
+            except Exception:
                 pass
             return False
         finally:

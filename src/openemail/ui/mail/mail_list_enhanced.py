@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import List, Optional
 
@@ -26,6 +27,8 @@ from PyQt6.QtWidgets import (
 
 from openemail.models.email import Email
 from openemail.models.folder import Folder
+
+logger = logging.getLogger(__name__)
 
 
 class EnhancedMailItemWidget(QWidget):
@@ -1030,7 +1033,7 @@ class EnhancedMailListWidget(QWidget):
                 self.labels_changed.emit()
 
         except Exception as e:
-            print(f"切换标签失败: {e}")
+            logger.error("切换标签失败: %s", e)
 
     def _on_labels_changed(self):
         """标签变化时刷新邮件显示"""
