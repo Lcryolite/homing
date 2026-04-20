@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QTimeEdit,
     QSizePolicy,
+    QSpinBox,
 )
 from PyQt6.QtGui import QPainter, QColor, QFont, QPen, QTextCharFormat
 
@@ -531,6 +532,61 @@ class EventEditDialog(QDialog):
         time_layout.addStretch()
         form.addRow("时间:", time_layout)
 
+        # 提醒设置
+        reminder_layout = QHBoxLayout()
+        reminder_layout.setSpacing(8)
+
+        self._reminder_spin = QSpinBox()
+        self._reminder_spin.setRange(0, 1440)  # 0到24小时
+        self._reminder_spin.setSingleStep(5)
+        self._reminder_spin.setSuffix(" 分钟前")
+        self._reminder_spin.setValue(0)
+
+        reminder_label = QLabel("提醒:")
+        reminder_layout.addWidget(reminder_label)
+        reminder_layout.addWidget(self._reminder_spin)
+
+        # 添加常用提醒选项按钮
+        reminder_preset_layout = QHBoxLayout()
+        reminder_preset_layout.setSpacing(4)
+
+        self._reminder_none_btn = QPushButton("无提醒")
+        self._reminder_none_btn.setCheckable(True)
+        self._reminder_none_btn.setChecked(True)
+        self._reminder_none_btn.clicked.connect(lambda: self._reminder_spin.setValue(0))
+
+        self._reminder_5min_btn = QPushButton("5分钟")
+        self._reminder_5min_btn.setCheckable(True)
+        self._reminder_5min_btn.clicked.connect(lambda: self._reminder_spin.setValue(5))
+
+        self._reminder_15min_btn = QPushButton("15分钟")
+        self._reminder_15min_btn.setCheckable(True)
+        self._reminder_15min_btn.clicked.connect(
+            lambda: self._reminder_spin.setValue(15)
+        )
+
+        self._reminder_1hour_btn = QPushButton("1小时")
+        self._reminder_1hour_btn.setCheckable(True)
+        self._reminder_1hour_btn.clicked.connect(
+            lambda: self._reminder_spin.setValue(60)
+        )
+
+        self._reminder_1day_btn = QPushButton("1天")
+        self._reminder_1day_btn.setCheckable(True)
+        self._reminder_1day_btn.clicked.connect(
+            lambda: self._reminder_spin.setValue(1440)
+        )
+
+        reminder_preset_layout.addWidget(self._reminder_none_btn)
+        reminder_preset_layout.addWidget(self._reminder_5min_btn)
+        reminder_preset_layout.addWidget(self._reminder_15min_btn)
+        reminder_preset_layout.addWidget(self._reminder_1hour_btn)
+        reminder_preset_layout.addWidget(self._reminder_1day_btn)
+        reminder_preset_layout.addStretch()
+
+        form.addRow(reminder_layout)
+        form.addRow("", reminder_preset_layout)
+
         color_label = QLabel("颜色:")
         self._color_picker = ColorPickerWidget()
         color_row = QHBoxLayout()
@@ -625,6 +681,23 @@ class EventEditDialog(QDialog):
             if self._event.color:
                 self._color_picker._pick(self._event.color)
 
+            # 加载提醒设置
+            if self._event.reminder > 0:
+                self._reminder_spin.setValue(self._event.reminder)
+                # 选择对应的预设按钮
+                if self._event.reminder == 5:
+                    self._reminder_5min_btn.setChecked(True)
+                elif self._event.reminder == 15:
+                    self._reminder_15min_btn.setChecked(True)
+                elif self._event.reminder == 60:
+                    self._reminder_1hour_btn.setChecked(True)
+                elif self._event.reminder == 1440:
+                    self._reminder_1day_btn.setChecked(True)
+                else:
+                    self._reminder_none_btn.setChecked(True)
+            else:
+                self._reminder_none_btn.setChecked(True)
+
     def _save(self):
         title = self._title_edit.text().strip()
         if not title:
@@ -642,6 +715,7 @@ class EventEditDialog(QDialog):
         ev.description = self._desc_edit.toPlainText().strip()
         ev.is_all_day = self._allday_check.isChecked()
         ev.color = self._color_picker.get_color()
+        ev.reminder = self._reminder_spin.value()
 
         if self._initial_date and self._is_new:
             date_str = self._initial_date.toString("yyyy-MM-dd")
