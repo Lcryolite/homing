@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-import base64
-import json
-import secrets
-import webbrowser
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from typing import Any
-from urllib.parse import parse_qs, urlparse
+import logging
+from typing import Optional, Any, Callable
 
-from authlib.integrations.httpx_client import OAuth2Client
-from authlib.oauth2.rfc7636 import create_s256_code_challenge
+from openemail.core.oauth2_new import (
+    OAuthAuthenticator,
+    OAuthManager,
+    OAuthError,
+    OAuthErrorCode,
+    get_oauth_error_message,
+    oauth_manager as _oauth_manager,
+)
 
-from openemail.models.account import Account
+logger = logging.getLogger(__name__)
 
 
-OAUTH_CONFIGS: dict[str, dict[str, Any]] = {
+# 保持向后兼容的常量
+OAUTH_CONFIGS = {
     "google": {
         "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth",
         "token_url": "https://oauth2.googleapis.com/token",
@@ -29,148 +31,91 @@ OAUTH_CONFIGS: dict[str, dict[str, Any]] = {
         "client_id": "",
         "client_secret": "",
     },
-    "yahoo": {
-        "authorize_url": "https://api.login.yahoo.com/oauth2/request_auth",
-        "token_url": "https://api.login.yahoo.com/oauth2/get_token",
-        "scope": "mail-w",
-        "client_id": "",
-        "client_secret": "",
-    },
 }
 
-_REDIRECT_PORT = 8742
-_REDIRECT_PATH = "/callback"
-_REDIRECT_URI = f"http://127.0.0.1:{_REDIRECT_PORT}{_REDIRECT_PATH}"
+_REDIRECT_URI = "http://127.0.0.1:8742"
+
+# 向后兼容的类名
+OAuth2Authenticator = OAuthAuthenticator
 
 
-class _CallbackHandler(BaseHTTPRequestHandler):
-    auth_code: str = ""
-    error: str = ""
-
-    def do_GET(self) -> None:
-        parsed = urlparse(self.path)
-        params = parse_qs(parsed.query)
-
-        if "code" in params:
-            _CallbackHandler.auth_code = params["code"][0]
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(
-                b"<html><body><h1>Authorization successful! You can close this tab.</h1></body></html>"
-            )
-        elif "error" in params:
-            _CallbackHandler.error = params.get(
-                "error_description", [params["error"][0]]
-            )[0]
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(
-                f"<html><body><h1>Error: {_CallbackHandler.error}</h1></body></html>".encode()
-            )
-        else:
-            self.send_response(400)
-            self.end_headers()
-
-    def log_message(self, format, *args) -> None:
-        pass
+# 旧的回调处理器已移除，使用oauth2_new.py中的新实现
 
 
 class OAuth2Authenticator:
+    """OAuth2认证器（线程安全版本）"""
+
     def __init__(self, provider: str) -> None:
-        self._provider = provider
-        self._config = OAUTH_CONFIGS.get(provider, {})
-        self._client: OAuth2Client | None = None
+        self._authenticator = OAuthAuthenticator(provider)
 
     def set_client_credentials(self, client_id: str, client_secret: str) -> None:
-        self._config["client_id"] = client_id
-        self._config["client_secret"] = client_secret
+        self._authenticator.set_client_credentials(client_id, client_secret)
 
     def get_authorization_url(self) -> tuple[str, str]:
-        code_verifier = secrets.token_urlsafe(32)
-        code_challenge = create_s256_code_challenge(code_verifier)
-
-        self._client = OAuth2Client(
-            client_id=self._config["client_id"],
-            client_secret=self._config["client_secret"],
-            authorize_url=self._config["authorize_url"],
-            token_endpoint=self._config["token_url"],
-            redirect_uri=_REDIRECT_URI,
-            scope=self._config["scope"],
-        )
-
-        url, state = self._client.create_authorization_url(
-            self._config["authorize_url"],
-            code_challenge=code_challenge,
-            code_challenge_method="S256",
-            state=code_verifier,
-            access_type="offline",
-            prompt="consent",
-        )
-        return url, code_verifier
+        """获取授权URL"""
+        try:
+            return self._authenticator.get_authorization_url()
+        except OAuthError as e:
+            logger.error("获取授权URL失败: %s", e.message)
+            raise
 
     def authorize_interactive(self) -> dict[str, str] | None:
-        url, code_verifier = self.get_authorization_url()
-        webbrowser.open(url)
-
-        _CallbackHandler.auth_code = ""
-        _CallbackHandler.error = ""
-
-        server = HTTPServer(("127.0.0.1", _REDIRECT_PORT), _CallbackHandler)
-        server.handle_request()
-
-        if _CallbackHandler.error:
-            return None
-        if not _CallbackHandler.auth_code:
-            return None
-
-        return self._exchange_code(_CallbackHandler.auth_code, code_verifier)
-
-    def _exchange_code(self, code: str, code_verifier: str) -> dict[str, str] | None:
-        if self._client is None:
-            return None
+        """交互式授权（阻塞式，UI应使用authorize_interactive_async）"""
         try:
-            token = self._client.fetch_token(
-                self._config["token_url"],
-                code=code,
-                code_verifier=code_verifier,
-            )
-            return {
-                "access_token": token.get("access_token", ""),
-                "refresh_token": token.get("refresh_token", ""),
-                "token_type": token.get("token_type", "Bearer"),
-                "expires_in": str(token.get("expires_in", 0)),
-            }
-        except Exception:
+            return self._authenticator.authorize_interactive()
+        except OAuthError as e:
+            logger.error("交互授权失败: %s", e.message)
             return None
+
+    def authorize_interactive_async(
+        self, callback: Callable[[Optional[dict[str, str]], Optional[OAuthError]], None]
+    ) -> None:
+        """异步交互式授权"""
+
+        def auth_thread():
+            try:
+                tokens = self._authenticator.authorize_interactive()
+                callback(tokens, None)
+            except OAuthError as e:
+                logger.error("异步授权失败: %s", e.message)
+                callback(None, e)
+            except Exception as e:
+                logger.error("异步授权异常: %s", str(e))
+                callback(
+                    None,
+                    OAuthError(
+                        OAuthErrorCode.TOKEN_EXCHANGE_FAILED, f"授权异常: {str(e)}"
+                    ),
+                )
+
+        # 在新线程中执行授权
+        import threading
+
+        thread = threading.Thread(target=auth_thread, daemon=True)
+        thread.start()
 
     def refresh_token(self, refresh_token: str) -> dict[str, str] | None:
-        if self._client is None:
-            self._client = OAuth2Client(
-                client_id=self._config["client_id"],
-                client_secret=self._config["client_secret"],
-                token_endpoint=self._config["token_url"],
-            )
+        """刷新令牌"""
         try:
-            token = self._client.refresh_token(
-                self._config["token_url"],
-                refresh_token=refresh_token,
-            )
-            return {
-                "access_token": token.get("access_token", ""),
-                "refresh_token": token.get("refresh_token", refresh_token),
-                "token_type": token.get("token_type", "Bearer"),
-                "expires_in": str(token.get("expires_in", 0)),
-            }
-        except Exception:
+            return self._authenticator.refresh_token(refresh_token)
+        except OAuthError as e:
+            logger.error("令牌刷新失败: %s", e.message)
             return None
+
+    def check_and_refresh(self, account: Account) -> bool:
+        """检查并刷新令牌"""
+        return self._authenticator.check_and_refresh(account)
 
     @staticmethod
     def build_xoauth2_string(email: str, access_token: str) -> str:
-        auth_string = f"user={email}\x01auth=Bearer {access_token}\x01\x01"
-        return base64.b64encode(auth_string.encode()).decode()
+        """构建XOAUTH2认证字符串"""
+        from openemail.core.oauth2_new import OAuthAuthenticator
+
+        return OAuthAuthenticator.build_xoauth2_string(email, access_token)
 
     @staticmethod
     def apply_to_account(account: Account, tokens: dict[str, str]) -> None:
-        account.oauth_token = tokens.get("access_token", "")
-        account.oauth_refresh = tokens.get("refresh_token", "")
-        account.save()
+        """将token信息应用到账户"""
+        from openemail.core.oauth2_new import OAuthAuthenticator
+
+        OAuthAuthenticator.apply_to_account(account, tokens)

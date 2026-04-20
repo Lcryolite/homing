@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 6
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -233,5 +233,49 @@ MIGRATIONS: dict[int, list[str]] = {
         """CREATE INDEX IF NOT EXISTS idx_email_tags_tag ON email_tags(tag_id)""",
         """CREATE INDEX IF NOT EXISTS idx_folders_parent ON folders(parent_id)""",
         """CREATE INDEX IF NOT EXISTS idx_operation_queue_status ON operation_queue(status)""",
+    ],
+    4: [
+        # 添加ActiveSync支持字段
+        """ALTER TABLE accounts ADD COLUMN eas_host TEXT""",
+        """ALTER TABLE accounts ADD COLUMN eas_path TEXT DEFAULT '/Microsoft-Server-ActiveSync'""",
+        # 添加日历和联系人同步字段
+        """ALTER TABLE accounts ADD COLUMN sync_calendar INTEGER DEFAULT 0""",
+        """ALTER TABLE accounts ADD COLUMN sync_contacts INTEGER DEFAULT 0""",
+        """ALTER TABLE accounts ADD COLUMN sync_tasks INTEGER DEFAULT 0""",
+        # 设备ID字段用于ActiveSync
+        """ALTER TABLE accounts ADD COLUMN eas_device_id TEXT""",
+        # 为ActiveSync添加索引
+        """CREATE INDEX IF NOT EXISTS idx_accounts_protocol ON accounts(protocol)""",
+    ],
+    5: [
+        # 批次 D：连接状态状态机和验证字段
+        """ALTER TABLE accounts ADD COLUMN connection_status TEXT DEFAULT 'unverified'""",
+        """ALTER TABLE accounts ADD COLUMN token_expires_at TEXT""",
+        """ALTER TABLE accounts ADD COLUMN last_error_code TEXT""",
+        """ALTER TABLE accounts ADD COLUMN last_error_at TEXT""",
+        """ALTER TABLE accounts ADD COLUMN sync_fail_count INTEGER DEFAULT 0""",
+        """ALTER TABLE accounts ADD COLUMN last_verified_at TEXT""",
+        """ALTER TABLE accounts ADD COLUMN validation_result TEXT""",
+        """ALTER TABLE accounts ADD COLUMN is_default INTEGER DEFAULT 0""",
+        # 为连接状态和最后验证时间添加索引
+        """CREATE INDEX IF NOT EXISTS idx_accounts_connection_status ON accounts(connection_status)""",
+        """CREATE INDEX IF NOT EXISTS idx_accounts_last_verified ON accounts(last_verified_at)""",
+        """CREATE INDEX IF NOT EXISTS idx_accounts_sync_fail ON accounts(sync_fail_count)""",
+        """CREATE INDEX IF NOT EXISTS idx_accounts_is_default ON accounts(is_default)""",
+        # 迁移历史数据
+        """UPDATE accounts SET connection_status = 'verified' WHERE is_active = 1""",
+        """UPDATE accounts SET connection_status = 'disabled' WHERE is_active = 0""",
+        """UPDATE accounts SET last_verified_at = datetime('now') WHERE connection_status = 'verified'""",
+        # 批次 D2：设置第一个已验证账号为默认
+        """UPDATE accounts SET is_default = 1 WHERE id IN (
+            SELECT id FROM accounts 
+            WHERE is_active = 1 AND connection_status IN ('verified', 'sync_ready') 
+            ORDER BY id LIMIT 1
+        )""",
+    ],
+    6: [
+        # 批次 E-F：OAuth和验证增强
+        """ALTER TABLE accounts ADD COLUMN metadata TEXT DEFAULT ''""",
+        # 为metadata添加注释：JSON序列化的元数据，用于存储风险信息等
     ],
 }

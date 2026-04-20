@@ -2,14 +2,110 @@ from __future__ import annotations
 
 import asyncio
 import email
+import logging
 from email import policy
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 from typing import Any
 
-import aioimaplib
+# 条件导入aioimaplib
+try:
+    import aioimaplib
 
-from openemail.core.oauth2 import OAuth2Authenticator
+    AIOIMAPLIB_AVAILABLE = True
+    from aioimaplib import AioImap
+except ImportError:
+    AIOIMAPLIB_AVAILABLE = False
+
+    # 使用Python标准库imaplib包装成异步接口
+    import imaplib
+    import ssl as _ssl
+
+    class _SyncImapWrapper:
+        """将同步imaplib包装为异步接口，兼容aioimaplib的API"""
+
+        def __init__(self, host, port=993, ssl_mode=None, timeout=30):
+            self._host = host
+            self._port = port
+            self._ssl_mode = ssl_mode
+            self._timeout = timeout
+            self._conn = None
+
+        async def wait_hello_from_server(self):
+            if self._ssl_mode == "ssl" or self._port == 993:
+                ctx = _ssl.create_default_context()
+                self._conn = imaplib.IMAP4_SSL(
+                    self._host, self._port, ssl_context=ctx, timeout=self._timeout
+                )
+            else:
+                self._conn = imaplib.IMAP4(
+                    self._host, self._port, timeout=self._timeout
+                )
+                if self._ssl_mode == "starttls":
+                    ctx = _ssl.create_default_context()
+                    self._conn.starttls(ssl_context=ctx)
+
+        async def login(self, username, password):
+            if not self._conn:
+                await self.wait_hello_from_server()
+            return self._conn.login(username, password)
+
+        async def xoauth2(self, user, token):
+            if not self._conn:
+                await self.wait_hello_from_server()
+            auth_string = f"user={user}\x01auth=Bearer {token}\x01\x01"
+            return self._conn.authenticate("XOAUTH2", lambda x: auth_string.encode())
+
+        async def select(self, mailbox="INBOX"):
+            return self._conn.select(mailbox)
+
+        async def list(self, reference='""', pattern="*"):
+            return self._conn.list(reference, pattern)
+
+        async def search(self, *criteria, charset=None, by_uid=False):
+            if charset:
+                return self._conn.search(charset, *criteria)
+            return self._conn.search(None, *criteria)
+
+        async def fetch(self, message_set, *args):
+            return self._conn.fetch(message_set, *args)
+
+        async def store(self, message_set, flags_str, flags):
+            return self._conn.store(message_set, flags_str, flags)
+
+        async def copy(self, message_set, mailbox):
+            return self._conn.copy(message_set, mailbox)
+
+        async def expunge(self):
+            return self._conn.expunge()
+
+        async def logout(self):
+            if self._conn:
+                try:
+                    return self._conn.logout()
+                except Exception:
+                    pass
+            return ("OK", [b"Logout"])
+
+        async def idle(self, timeout=300):
+            # 标准imaplib不支持IDLE，直接返回
+            await asyncio.sleep(min(timeout, 30))
+
+        async def noop(self):
+            if self._conn:
+                return self._conn.noop()
+            return ("OK", [b"Noop"])
+
+    AioImap = _SyncImapWrapper
+
+    # 创建兼容的模块对象
+    class _MockAioimaplib:
+        IMAP4 = imaplib.IMAP4
+        IMAP4_SSL = imaplib.IMAP4_SSL
+        AioImap = _SyncImapWrapper
+
+    aioimaplib = _MockAioimaplib()
+
 from openemail.models.account import Account
 from openemail.models.email import Email
 from openemail.models.folder import Folder
@@ -51,35 +147,77 @@ def _extract_preview(text: str, max_len: int = 100) -> str:
 class IMAPClient:
     def __init__(self, account: Account) -> None:
         self._account = account
-        self._client: aioimaplib.IMAP4 | aioimaplib.IMAP4_SSL | None = None
+        self._client = None
         self._idle_event = asyncio.Event()
 
     async def connect(self) -> bool:
         try:
-            if self._account.ssl_mode == "ssl":
-                self._client = aioimaplib.IMAP4_SSL(
-                    host=self._account.imap_host,
-                    port=self._account.imap_port,
-                )
+            if AIOIMAPLIB_AVAILABLE:
+                if self._account.ssl_mode == "ssl":
+                    self._client = aioimaplib.IMAP4_SSL(
+                        host=self._account.imap_host,
+                        port=self._account.imap_port,
+                    )
+                else:
+                    self._client = aioimaplib.IMAP4(
+                        host=self._account.imap_host,
+                        port=self._account.imap_port,
+                    )
+                await self._client.wait_hello_from_server()
             else:
-                self._client = aioimaplib.IMAP4(
+                self._client = _SyncImapWrapper(
                     host=self._account.imap_host,
                     port=self._account.imap_port,
+                    ssl_mode=self._account.ssl_mode,
                 )
+                await self._client.wait_hello_from_server()
 
             if self._account.auth_type == "oauth2":
-                auth_string = OAuth2Authenticator.build_xoauth2_string(
+                # 对于XOAUTH2，使用专门的xoauth2方法
+                # aioimaplib的xoauth2方法接受user和token参数
+                await self._client.xoauth2(
                     self._account.email, self._account.oauth_token
                 )
-                await self._client.authenticate(
-                    "XOAUTH2", lambda x: auth_string.encode()
-                )
             else:
+                # 标准用户名密码登录
                 await self._client.login(self._account.email, self._account.password)
 
+            # 测试连接是否真的成功
+            if self._client:
+                # 尝试选择INBOX验证连接
+                try:
+                    await self._client.select("INBOX")
+                except Exception as e:
+                    # 记录连接测试失败，但连接已建立
+                    logging.debug(
+                        f"IMAP connection INBOX select test failed (connection still established): {e}"
+                    )
             return True
         except Exception as e:
-            print(f"IMAP connect error for {self._account.email}: {e}")
+            error_msg = str(e)
+            print(f"IMAP connect error for {self._account.email}: {error_msg}")
+
+            # 提供更好的错误提示
+            if (
+                "username and password not accepted" in error_msg.lower()
+                or "invalid credentials" in error_msg.lower()
+            ):
+                print(f"认证失败！请检查用户名和密码是否正确。")
+                print(f"对于Gmail用户：请使用应用专用密码而不是普通密码。")
+                print(f"如何获取应用专用密码：")
+                print(f"1. 登录Gmail账户")
+                print(f"2. 转到账户安全设置")
+                print(f"3. 开启两步验证（如未开启）")
+                print(f"4. 在'应用专用密码'部分生成新密码")
+                print(f"5. 在OpenEmail中使用此密码而非账户密码")
+            elif "xoauth2" in error_msg.lower():
+                print(f"OAuth2认证失败！Token可能已过期。")
+            elif (
+                "network is unreachable" in error_msg.lower()
+                or "connection refused" in error_msg.lower()
+            ):
+                print(f"网络连接失败！请检查网络设置和主机名/端口。")
+
             return False
 
     async def disconnect(self) -> None:
@@ -107,11 +245,14 @@ class IMAPClient:
                 folders.append({"name": name, "path": path})
         return folders
 
-    async def sync_folder(self, folder_name: str, folder_id: int) -> int:
+    async def sync_folder(
+        self, folder_name: str, folder_id: int, limit: int = 100
+    ) -> int:
         if not self._client:
             return 0
 
-        await self._client.select(folder_name)
+        actual_name = await self._resolve_folder_name(folder_name)
+        await self._client.select(actual_name)
         _, data = await self._client.search("ALL")
         if not data or not data[0]:
             return 0
@@ -129,6 +270,8 @@ class IMAPClient:
         }
 
         new_uids = [u for u in uids if u not in existing_uids]
+        if len(new_uids) > limit:
+            new_uids = new_uids[-limit:]
         synced = 0
 
         for uid in new_uids:
@@ -155,6 +298,18 @@ class IMAPClient:
                 synced += 1
 
         return synced
+
+    async def _resolve_folder_name(self, folder_name: str) -> str:
+        gmail_map = {
+            "INBOX": "INBOX",
+            "Sent": '"[Gmail]/Sent Mail"',
+            "Drafts": '"[Gmail]/Drafts"',
+            "Spam": '"[Gmail]/Spam"',
+            "Trash": '"[Gmail]/Trash"',
+        }
+        if self._account.imap_host and "gmail" in self._account.imap_host.lower():
+            return gmail_map.get(folder_name, folder_name)
+        return folder_name
 
     async def fetch_new_emails(self, folder_name: str, folder_id: int) -> list[Email]:
         if not self._client:

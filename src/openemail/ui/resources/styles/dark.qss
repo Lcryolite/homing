@@ -460,3 +460,100 @@ QLabel[class="placeholder-text"] {
     color: #585b70;
     font-size: 16px;
 }
+
+QToolBar {
+    background-color: #181825;
+    border-bottom: 1px solid #45475a;
+    padding: 4px 8px;
+    spacing: 6px;
+}
+
+QToolBar QToolButton {
+    background-color: transparent;
+    color: #cdd6f4;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+
+QToolBar QToolButton:hover {
+    background-color: #313244;
+}
+
+QFrame[class="sidebar"] QPushButton[class="primary"] {
+    background-color: #89b4fa;
+    color: #1e1e2e;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+QFrame[class="sidebar"] QPushButton[class="primary"]:hover {
+    background-color: #9bc5fa;
+}
+
+QFrame[class="sidebar"] QPushButton:checked {
+    background-color: #313244;
+    color: #cdd6f4;
+}
+
+QFrame[class="sidebar"] QPushButton:hover {
+    background-color: #313244;
+}
+
+QTabWidget::pane {
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    background-color: #1e1e2e;
+}
+
+QTabBar::tab {
+    background-color: #313244;
+    color: #a6adc8;
+    padding: 10px 20px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin-right: 2px;
+    font-size: 13px;
+}
+
+QTabBar::tab:selected {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border-bottom: 2px solid #89b4fa;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #45475a;
+    color: #cdd6f4;
+}
+
+QFrame[class="card"]:hover {
+    border-color: #89b4fa;
+}
+
+QFrame[class="kanban-column"] {
+    background-color: #313244;
+    border: 1px solid #45475a;
+    border-radius: 10px;
+    min-width: 260px;
+    max-width: 320px;
+}
+
+QLabel[class="priority-urgent"] {
+    color: #f38ba8;
+    font-weight: bold;
+}
+
+QLabel[class="priority-high"] {
+    color: #fab387;
+    font-weight: bold;
+}
+
+QLabel[class="priority-normal"] {
+    color: #89b4fa;
+}
+
+QLabel[class="priority-low"] {
+    color: #a6adc8;
+}

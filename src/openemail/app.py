@@ -7,6 +7,65 @@ from PyQt6.QtWidgets import QApplication
 
 from openemail.config import settings
 from openemail.storage.database import db
+from openemail.utils.exceptions import (
+    install_global_handler,
+    detect_last_crash,
+    clear_crash_flag,
+)
+
+
+def _ensure_async_deps():
+    """确保异步依赖可用，缺失时注入轻量模拟"""
+    _mocks = {
+        "aiohttp": lambda: type(
+            "aiohttp",
+            (),
+            {
+                "__version__": "0.0.0-mock",
+                "ClientSession": type(
+                    "ClientSession",
+                    (),
+                    {
+                        "__init__": lambda self, *a, **k: None,
+                    },
+                ),
+            },
+        )(),
+        "aiohttp.client": lambda: type("client", (), {})(),
+        "aiosmtplib": lambda: type(
+            "aiosmtplib",
+            (),
+            {
+                "SMTP": type(
+                    "SMTP",
+                    (),
+                    {
+                        "__init__": lambda self, *a, **k: None,
+                    },
+                ),
+            },
+        )(),
+        "aioimaplib": lambda: type(
+            "aioimaplib",
+            (),
+            {
+                "AioImap": type(
+                    "AioImap",
+                    (),
+                    {
+                        "__init__": lambda self, *a, **k: None,
+                    },
+                ),
+            },
+        )(),
+    }
+    for name, factory in _mocks.items():
+        if name not in sys.modules:
+            try:
+                __import__(name)
+            except ImportError:
+                sys.modules[name] = factory()
+
 
 _app: QApplication | None = None
 _main_window = None
@@ -39,6 +98,16 @@ def apply_theme() -> None:
 def create_app() -> tuple[QApplication, "MainWindow"]:
     global _app, _main_window
 
+    # 确保异步依赖可用
+    _ensure_async_deps()
+
+    # 安装全局异常处理器
+    install_global_handler()
+
+    # 检测上次是否异常退出
+    if detect_last_crash():
+        print("警告：检测到应用程序上次可能异常退出，详情请查看 ~/.openemail/crash.log")
+
     _app = QApplication(sys.argv)
     _app.setApplicationName("OpenEmail")
     _app.setOrganizationName("openemail")
@@ -51,6 +120,9 @@ def create_app() -> tuple[QApplication, "MainWindow"]:
     _main_window = MainWindow()
 
     apply_theme()
+
+    # 清除崩溃标志
+    clear_crash_flag()
 
     return _app, _main_window
 

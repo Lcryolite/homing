@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import email
 import poplib
+import socket
+import ssl
 from email import policy
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
@@ -51,24 +53,61 @@ class POP3Client:
         self._client: poplib.POP3 | poplib.POP3_SSL | None = None
 
     def connect(self) -> bool:
+        """连接到POP3服务器并进行认证
+
+        返回:
+            bool: 连接和认证是否成功
+
+        异常:
+            会抛出具体异常以便调用方进行错误分类
+        """
         try:
             if self._account.ssl_mode == "ssl":
                 self._client = poplib.POP3_SSL(
                     host=self._account.pop3_host,
                     port=self._account.pop3_port,
+                    timeout=30,
                 )
             else:
                 self._client = poplib.POP3(
                     host=self._account.pop3_host,
                     port=self._account.pop3_port,
+                    timeout=30,
                 )
 
-            self._client.user(self._account.email)
-            self._client.pass_(self._account.password)
+            # 测试欢迎消息
+            welcome_msg = self._client.getwelcome().decode("utf-8", errors="ignore")
+            if not welcome_msg.startswith("+OK"):
+                raise ConnectionError(f"服务器欢迎消息异常: {welcome_msg[:100]}")
+
+            # 用户认证
+            user_response = self._client.user(self._account.email)
+            if not user_response.startswith(b"+OK"):
+                raise PermissionError(
+                    f"用户认证失败: {user_response.decode('utf-8', errors='ignore')}"
+                )
+
+            # 密码认证
+            pass_response = self._client.pass_(self._account.password)
+            if not pass_response.startswith(b"+OK"):
+                raise PermissionError(
+                    f"密码认证失败: {pass_response.decode('utf-8', errors='ignore')}"
+                )
+
             return True
+        except socket.timeout:
+            raise TimeoutError(
+                f"POP3连接超时: {self._account.pop3_host}:{self._account.pop3_port}"
+            )
+        except ConnectionRefusedError:
+            raise ConnectionRefusedError(
+                f"POP3连接被拒绝: {self._account.pop3_host}:{self._account.pop3_port}"
+            )
+        except ssl.SSLError as ssl_error:
+            raise ssl_error
         except Exception as e:
-            print(f"POP3 connect error for {self._account.email}: {e}")
-            return False
+            # 重新抛出原始异常
+            raise e
 
     def disconnect(self) -> None:
         if self._client:

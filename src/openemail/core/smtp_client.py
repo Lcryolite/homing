@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import smtplib
+import ssl
 from email.message import EmailMessage
 from typing import Any
 
-import aiosmtplib
+try:
+    import aiosmtplib
+
+    AIOSMTPLIB_AVAILABLE = True
+except ImportError:
+    aiosmtplib = None
+    AIOSMTPLIB_AVAILABLE = False
 
 from openemail.core.oauth2 import OAuth2Authenticator
 from openemail.models.account import Account
@@ -69,7 +77,7 @@ class SMTPClient:
                 await self._send_with_xoauth2(
                     message_str, use_tls, start_tls, auth_string
                 )
-            else:
+            elif AIOSMTPLIB_AVAILABLE:
                 await aiosmtplib.send(
                     message_str,
                     hostname=self._account.smtp_host,
@@ -79,51 +87,123 @@ class SMTPClient:
                     use_tls=use_tls,
                     start_tls=start_tls,
                 )
+            else:
+                # 使用标准库smtplib回退
+                await self._send_sync(message_str, use_tls, start_tls)
             return True
         except Exception as e:
             print(f"SMTP send error for {self._account.email}: {e}")
             return False
 
+    async def _send_sync(
+        self, message_str: str, use_tls: bool, start_tls: bool
+    ) -> None:
+        """使用标准库smtplib发送邮件"""
+        if use_tls:
+            ctx = ssl.create_default_context()
+            server = smtplib.SMTP_SSL(
+                self._account.smtp_host,
+                self._account.smtp_port,
+                context=ctx,
+                timeout=30,
+            )
+        else:
+            server = smtplib.SMTP(
+                self._account.smtp_host, self._account.smtp_port, timeout=30
+            )
+            if start_tls:
+                ctx = ssl.create_default_context()
+                server.starttls(context=ctx)
+
+        server.login(self._account.email, self._account.password)
+        server.sendmail(self._account.email, [], message_str)
+        server.quit()
+
     async def _send_with_xoauth2(
         self, message_str: str, use_tls: bool, start_tls: bool, auth_string: str
     ) -> None:
-        smtp = aiosmtplib.SMTP(
-            hostname=self._account.smtp_host,
-            port=self._account.smtp_port,
-            use_tls=use_tls,
-        )
-        await smtp.connect()
-        if start_tls:
-            await smtp.starttls()
-        await smtp.auth("XOAUTH2", auth_string)
-        await smtp.sendmail(self._account.email, [], message_str)
-        await smtp.quit()
+        if AIOSMTPLIB_AVAILABLE:
+            smtp = aiosmtplib.SMTP(
+                hostname=self._account.smtp_host,
+                port=self._account.smtp_port,
+                use_tls=use_tls,
+            )
+            await smtp.connect()
+            if start_tls:
+                await smtp.starttls()
+            await smtp.auth_xoauth2(self._account.email, auth_string)
+            await smtp.sendmail(self._account.email, [], message_str)
+            await smtp.quit()
+        else:
+            if use_tls:
+                ctx = ssl.create_default_context()
+                server = smtplib.SMTP_SSL(
+                    self._account.smtp_host,
+                    self._account.smtp_port,
+                    context=ctx,
+                    timeout=30,
+                )
+            else:
+                server = smtplib.SMTP(
+                    self._account.smtp_host, self._account.smtp_port, timeout=30
+                )
+                if start_tls:
+                    ctx = ssl.create_default_context()
+                    server.starttls(context=ctx)
+            auth_bytes = auth_string.encode("utf-8")
+            server.authenticate("XOAUTH2", lambda _: auth_bytes)
+            server.sendmail(self._account.email, [], message_str)
+            server.quit()
 
     async def test_connection(self) -> bool:
         try:
             use_tls = self._account.ssl_mode == "ssl"
             start_tls = self._account.ssl_mode == "starttls"
 
-            if use_tls:
-                smtp = aiosmtplib.SMTP(
-                    hostname=self._account.smtp_host,
-                    port=self._account.smtp_port,
-                    use_tls=True,
-                )
-                await smtp.connect()
+            if AIOSMTPLIB_AVAILABLE:
+                if use_tls:
+                    smtp = aiosmtplib.SMTP(
+                        hostname=self._account.smtp_host,
+                        port=self._account.smtp_port,
+                        use_tls=True,
+                    )
+                    await smtp.connect()
+                else:
+                    smtp = aiosmtplib.SMTP(
+                        hostname=self._account.smtp_host,
+                        port=self._account.smtp_port,
+                    )
+                    await smtp.connect()
+                    if start_tls:
+                        await smtp.starttls()
+
+                if self._account.auth_type == "password":
+                    await smtp.login(self._account.email, self._account.password)
+
+                await smtp.quit()
             else:
-                smtp = aiosmtplib.SMTP(
-                    hostname=self._account.smtp_host,
-                    port=self._account.smtp_port,
-                )
-                await smtp.connect()
-                if start_tls:
-                    await smtp.starttls()
+                # 标准库回退
+                if use_tls:
+                    ctx = ssl.create_default_context()
+                    server = smtplib.SMTP_SSL(
+                        self._account.smtp_host,
+                        self._account.smtp_port,
+                        context=ctx,
+                        timeout=10,
+                    )
+                else:
+                    server = smtplib.SMTP(
+                        self._account.smtp_host, self._account.smtp_port, timeout=10
+                    )
+                    if start_tls:
+                        ctx = ssl.create_default_context()
+                        server.starttls(context=ctx)
 
-            if self._account.auth_type == "password":
-                await smtp.login(self._account.email, self._account.password)
+                if self._account.auth_type == "password":
+                    server.login(self._account.email, self._account.password)
 
-            await smtp.quit()
+                server.quit()
+
             return True
         except Exception as e:
             print(f"SMTP test connection error: {e}")

@@ -212,7 +212,8 @@ class OperationQueue:
 
     def clear_completed(self) -> None:
         """清除已完成的操作"""
-        db.delete("operation_queue", "status IN ('synced', 'failed')")
+        # 修复SQL注入风险：使用新的安全API
+        db.delete_safe("operation_queue", filters={"status": ["synced", "failed"]})
 
 
 operation_queue = OperationQueue()

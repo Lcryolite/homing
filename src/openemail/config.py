@@ -1,13 +1,17 @@
 import json
 import os
+import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 _APP_NAME = "openemail"
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_SETTINGS: dict[str, Any] = {
     "theme": "system",
     "sync_interval_minutes": 5,
+    "onboarding_state": "not_started",  # "not_started", "in_progress", "submitting", "completed", "recovery_needed"
     "window": {
         "width": 1200,
         "height": 800,
@@ -109,6 +113,35 @@ class Settings:
     def db_path(self) -> Path:
         return self._data_dir / "openemail.db"
 
+    @property
+    def oauth_creds_path(self) -> Path:
+        """获取OAuth认证凭据文件路径"""
+        return self._config_dir / "oauth_creds.json"
+
+    def get_oauth_config(self) -> Optional[dict[str, dict[str, str]]]:
+        """获取OAuth配置"""
+        creds_path = self.oauth_creds_path
+        if not creds_path.exists():
+            logger.warning("OAuth配置文件不存在: %s", creds_path)
+            return None
+
+        try:
+            content = creds_path.read_text(encoding="utf-8")
+            config = json.loads(content)
+
+            # 验证配置结构
+            if not isinstance(config, dict):
+                logger.error("OAuth配置格式错误: 应为字典")
+                return None
+
+            return config
+        except json.JSONDecodeError as e:
+            logger.error("OAuth配置JSON解析失败: %s", str(e))
+            return None
+        except Exception as e:
+            logger.error("读取OAuth配置失败: %s", str(e))
+            return None
+
     def get(self, key: str, default: Any = None) -> Any:
         keys = key.split(".")
         obj = self._data
@@ -145,6 +178,17 @@ class Settings:
     @property
     def window_geometry(self) -> dict[str, int]:
         return self._data.get("window", {})
+
+    @property
+    def onboarding_state(self) -> str:
+        """获取初始化引导状态"""
+        return self._data.get("onboarding_state", "not_started")
+
+    @onboarding_state.setter
+    def onboarding_state(self, value: str) -> None:
+        """设置初始化引导状态"""
+        self._data["onboarding_state"] = value
+        self.save()
 
     def save_window_geometry(
         self, x: int, y: int, w: int, h: int, sidebar_w: int

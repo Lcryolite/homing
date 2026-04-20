@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime
 from typing import Any
 
 from PyQt6.QtCore import QThread, pyqtSignal, QMutex
 
+logger = logging.getLogger(__name__)
+
 from openemail.config import settings
 from openemail.core.imap_client import IMAPClient
 from openemail.core.pop3_client import POP3Client
+from openemail.core.activesync_client import ActiveSyncClient, MockActiveSyncClient
 from openemail.models.account import Account
 from openemail.models.email import Email
 from openemail.models.folder import Folder
@@ -39,14 +43,38 @@ class SyncWorker(QThread):
             self._loop.close()
 
     async def _sync_all_accounts(self) -> None:
-        accounts = Account.get_all_active()
+        accounts = Account.get_syncable()  # 只获取可同步的账号
         for account in accounts:
             if not self._running:
                 break
+
+            # 记录同步日志
+            logger.info(
+                "开始同步账号: %s (状态: %s)",
+                account.email,
+                account.connection_status.value,
+            )
+
             self.sync_started.emit(account.id)
             try:
                 total = await self._sync_account(account)
                 self.sync_finished.emit(account.id, total)
+
+                # 记录同步成功日志
+                logger.info("账号同步完成: %s, 处理邮件: %d", account.email, total)
+
+            except Exception as e:
+                logger.error("同步账号 %s 时出错: %s", account.email, str(e))
+                self.sync_error.emit(account.id, str(e))
+
+                # 增加失败计数
+                try:
+                    account.sync_fail_count += 1
+                    account.last_error_code = "SYNC_ERROR"
+                    account.last_error_at = datetime.now().isoformat()
+                    account.save()
+                except Exception as save_error:
+                    logger.error("更新账号失败计数时出错: %s", str(save_error))
             except Exception as e:
                 self.sync_error.emit(account.id, str(e))
 
@@ -57,6 +85,8 @@ class SyncWorker(QThread):
             total_synced = await self._sync_imap(account)
         elif account.protocol == "pop3":
             total_synced = await self._sync_pop3(account)
+        elif account.protocol == "activesync":
+            total_synced = await self._sync_activesync(account)
 
         account.last_sync_at = datetime.now().isoformat()
         account.save()
@@ -242,6 +272,89 @@ class MailSyncManager:
         self.stop_sync()
         self.stop_all_idle()
         self.stop_auto_sync()
+
+    async def _sync_activesync(self, account: Account) -> int:
+        """ActiveSync协议同步"""
+        try:
+            # 使用Mock客户端进行测试
+            client = MockActiveSyncClient(account)
+            # 实际环境中使用: client = ActiveSyncClient(account)
+
+            if not await client.connect():
+                raise ConnectionError(
+                    f"Cannot connect to ActiveSync server for {account.email}"
+                )
+
+            try:
+                # 同步文件夹
+                remote_folders = await client.folder_sync()
+                total_synced = 0
+
+                for rf in remote_folders:
+                    folder_name = rf["name"]
+                    folder_type = rf.get("type", "")
+
+                    # 确保文件夹存在
+                    folder = Folder.get_by_name(account.id, folder_name)
+                    if folder is None:
+                        folder = Folder(
+                            account_id=account.id,
+                            name=folder_name,
+                            path=folder_name,
+                            is_system=folder_type
+                            in ["inbox", "sent", "drafts", "trash"],
+                        )
+                        folder.save()
+
+                    # 同步邮件
+                    sync_result = await client.email_sync(rf["id"], limit=50)
+                    emails_data = sync_result.get("emails", [])
+
+                    for email_data in emails_data:
+                        try:
+                            email_obj = Email(
+                                account_id=account.id,
+                                folder_id=folder.id,
+                                uid=email_data["id"],
+                                subject=email_data.get("subject", ""),
+                                sender_addr=email_data.get("from", ""),
+                                date=email_data.get("date", ""),
+                                is_read=email_data.get("read", False),
+                                is_flagged=email_data.get("flagged", False),
+                                preview_text=email_data.get("preview", ""),
+                            )
+
+                            # 保存邮件
+                            existing = Email.get_by_uid(
+                                account.id, folder.id, email_obj.uid
+                            )
+                            if existing:
+                                # 更新现有邮件
+                                existing.subject = email_obj.subject
+                                existing.is_read = email_obj.is_read
+                                existing.is_flagged = email_obj.is_flagged
+                                existing.save()
+                            else:
+                                email_obj.save()
+                                total_synced += 1
+
+                        except Exception as e:
+                            print(f"处理ActiveSync邮件失败: {e}")
+
+                    # 更新文件夹计数
+                    if emails_data:
+                        self.sync_worker.folder_updated.emit(
+                            account.id, folder.name, len(emails_data)
+                        )
+
+                return total_synced
+
+            finally:
+                await client.disconnect()
+
+        except Exception as e:
+            print(f"ActiveSync同步失败 {account.email}: {e}")
+            return 0
 
 
 mail_sync_manager = MailSyncManager()

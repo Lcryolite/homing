@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Runtime data (NEVER commit these - contains user credentials)
+*.db
+*.db-journal
+*.db-wal
+
+# User config (contains OAuth secrets - NEVER commit)
+oauth_creds.json
+settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug/test scripts (not part of the project)
+test_*.py
+debug_*.py
+fix_*.py
+*_launcher.py
+direct_run.py
+minimal_app.py
+skip_welcome.py
+init_db.py
+
+# Reports and summaries (development artifacts, not part of the project)
+REPORT_*.md
+STAGE*.md
+batch_*.md
+SECURITY_*.md
