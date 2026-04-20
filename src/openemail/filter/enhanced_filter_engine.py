@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import re
 import json
+import logging
+import re
+import sqlite3
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Tuple
-import sqlite3
 
 from openemail.models.email import Email
 from openemail.models.filter_rule import FilterRule
@@ -15,6 +16,8 @@ from openemail.models.folder import Folder
 from openemail.models.label import Label
 from openemail.models.contact import Contact
 from openemail.storage.database import db
+
+logger = logging.getLogger(__name__)
 
 
 class EnhancedRuleType(Enum):
@@ -368,7 +371,7 @@ class EnhancedFilterRule:
                 if self._apply_single_action(action, email):
                     applied = True
             except Exception as e:
-                print(f"应用动作时出错: {e}")
+                logger.error("应用动作时出错: %s", e)
 
         if applied:
             self.increment_hit()
@@ -843,7 +846,7 @@ def init_enhanced_filter_engine() -> None:
         "CREATE INDEX IF NOT EXISTS idx_enhanced_filter_hits ON enhanced_filter_rules(hit_count DESC)"
     )
 
-    print("增强版过滤器引擎初始化完成")
+    logger.info("增强版过滤器引擎初始化完成")
 
 
 # 自动初始化
