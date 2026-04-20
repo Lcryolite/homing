@@ -228,7 +228,7 @@ class IMAPClient:
                 pass
             self._client = None
 
-    async def list_folders(self) -> list[dict[str, str]]:
+    async def list_folders(self) -> list[dict[str, Any]]:
         if not self._client:
             return []
         _, data = await self._client.list()
@@ -238,11 +238,29 @@ class IMAPClient:
                 item = item.decode("utf-8", errors="replace")
             if not item or item == b")":
                 continue
-            parts = item.split('"/"')
+
+            flags: list[str] = []
+            name = ""
+
+            paren_start = item.find("(")
+            if paren_start != -1:
+                paren_end = item.find(")", paren_start)
+                if paren_end != -1:
+                    flags = item[paren_start + 1 : paren_end].split()
+                    rest = item[paren_end + 1 :].strip()
+                else:
+                    rest = item
+            else:
+                rest = item
+
+            parts = rest.split('"/"')
             if len(parts) >= 2:
                 name = parts[-1].strip().strip('"')
-                path = name
-                folders.append({"name": name, "path": path})
+            elif parts:
+                name = parts[0].strip().strip('"')
+
+            if name:
+                folders.append({"name": name, "path": name, "flags": flags})
         return folders
 
     async def sync_folder(

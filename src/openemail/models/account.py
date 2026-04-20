@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
-from datetime import datetime
-
-import logging
 from datetime import datetime, timedelta
 from openemail.storage.database import db
 from openemail.utils.crypto import decrypt_password, encrypt_password

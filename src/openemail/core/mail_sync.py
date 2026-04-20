@@ -75,8 +75,6 @@ class SyncWorker(QThread):
                     account.save()
                 except Exception as save_error:
                     logger.error("更新账号失败计数时出错: %s", str(save_error))
-            except Exception as e:
-                self.sync_error.emit(account.id, str(e))
 
     async def _sync_account(self, account: Account) -> int:
         total_synced = 0
@@ -101,15 +99,19 @@ class SyncWorker(QThread):
             folders = Folder.get_by_account(account.id)
             if not folders:
                 remote_folders = await client.list_folders()
+                Folder.discover_system_folders(account.id, remote_folders)
                 for rf in remote_folders:
                     name = rf["name"]
                     folder = Folder.get_by_name(account.id, name)
                     if folder is None:
+                        flags = rf.get("flags", [])
+                        special_use = Folder._resolve_special_use(name, flags) or ""
                         folder = Folder(
                             account_id=account.id,
                             name=name,
                             path=rf["path"],
-                            is_system=name in Folder.SYSTEM_FOLDERS,
+                            is_system=bool(special_use),
+                            special_use=special_use,
                         )
                         folder.save()
                     folders.append(folder)
@@ -325,9 +327,7 @@ class MailSyncManager:
                             )
 
                             # 保存邮件
-                            existing = Email.get_by_uid(
-                                account.id, folder.id, email_obj.uid
-                            )
+                            existing = Email.get_by_uid(account.id, email_obj.uid)
                             if existing:
                                 # 更新现有邮件
                                 existing.subject = email_obj.subject
@@ -343,7 +343,7 @@ class MailSyncManager:
 
                     # 更新文件夹计数
                     if emails_data:
-                        self.sync_worker.folder_updated.emit(
+                        self._sync_worker.folder_updated.emit(
                             account.id, folder.name, len(emails_data)
                         )
 

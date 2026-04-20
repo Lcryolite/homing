@@ -133,7 +133,6 @@ class Database:
 
     def _validate_sql_injection(self, where_clause: str) -> None:
         """验证WHERE子句是否存在SQL注入风险"""
-        # 检查SQL关键字
         sql_keywords = [
             "SELECT",
             "INSERT",
@@ -144,22 +143,30 @@ class Database:
             "ALTER",
             "UNION",
             "JOIN",
-            "OR",
-            "AND",
             "EXEC",
             "EXECUTE",
         ]
 
         upper_where = where_clause.upper()
         for keyword in sql_keywords:
-            # 检查是否包含SQL关键字，但排除合法的操作符如 "field = ?"
             pattern = rf"\b{keyword}\b"
-            if re.search(pattern, upper_where) and keyword not in ["OR", "AND"]:
+            if re.search(pattern, upper_where):
                 raise ValueError(
                     f"SQL注入风险: WHERE子句中包含禁止的SQL关键字 '{keyword}': {where_clause}"
                 )
 
-        # 检查分号
+        for keyword in ["OR", "AND"]:
+            pattern = rf"\b{keyword}\b\s+\d"
+            if re.search(pattern, upper_where):
+                raise ValueError(
+                    f"SQL注入风险: WHERE子句中包含不安全的逻辑操作 '{keyword}': {where_clause}"
+                )
+            pattern_eq = rf"\b{keyword}\b\s+\w+\s*=\s*\d"
+            if re.search(pattern_eq, upper_where):
+                raise ValueError(
+                    f"SQL注入风险: WHERE子句中包含不安全的逻辑操作 '{keyword}': {where_clause}"
+                )
+
         if ";" in where_clause:
             raise ValueError(f"SQL注入风险: WHERE子句中包含分号: {where_clause}")
 

@@ -761,19 +761,27 @@ class OfflineQueue:
     def retry_failed_operation(self, operation_id: int) -> bool:
         """重试失败的操作"""
         try:
-            # 获取操作
-            operation = OfflineOperation.get_by_id(operation_id)
+            operation = OfflineQueue.get_by_id(operation_id)
             if not operation:
                 return False
 
-            # 重置状态
             operation.status = OperationStatus.PENDING.value
             operation.next_attempt = None
             operation.error_message = ""
             operation.updated_at = datetime.now()
 
-            # 保存并重新排队
-            operation.save()
+            now = datetime.now().isoformat()
+            db.update(
+                "offline_operations",
+                {
+                    "status": OperationStatus.PENDING.value,
+                    "next_attempt": None,
+                    "error_message": "",
+                    "updated_at": now,
+                },
+                "id = ?",
+                (operation_id,),
+            )
             self._queue_operation(operation)
 
             logging.info(
@@ -820,7 +828,7 @@ class OfflineQueue:
             result = db.execute(sql, (cutoff_date,))
             count = result.rowcount if result else 0
 
-            logging.info(f"清理了 {count} 个已完成的操作（早于 {cutupoff_date}）")
+            logging.info(f"清理了 {count} 个已完成的操作（早于 {cutoff_date}）")
             return count
 
         except Exception as e:
@@ -870,14 +878,9 @@ def default_mark_read_handler(data: Dict[str, Any], account_id: int) -> bool:
         if not email_ids:
             return True
 
-        from openemail.models.email import Email
         from openemail.storage.database import db
 
-        # 批量更新
-        placeholders = ",".join("?" for _ in email_ids)
-        sql = f"UPDATE emails SET is_read = 1 WHERE id IN ({placeholders})"
-        db.execute(sql, tuple(email_ids))
-
+        db.update_safe("emails", {"is_read": 1}, {"id": email_ids})
         logging.info(f"批量标记 {len(email_ids)} 封邮件为已读")
         return True
 
@@ -895,14 +898,9 @@ def default_move_handler(data: Dict[str, Any], account_id: int) -> bool:
         if not email_ids or not target_folder_id:
             return False
 
-        from openemail.models.email import Email
         from openemail.storage.database import db
 
-        # 批量更新文件夹
-        placeholders = ",".join("?" for _ in email_ids)
-        sql = f"UPDATE emails SET folder_id = ? WHERE id IN ({placeholders})"
-        db.execute(sql, (target_folder_id, *email_ids))
-
+        db.update_safe("emails", {"folder_id": target_folder_id}, {"id": email_ids})
         logging.info(f"批量移动 {len(email_ids)} 封邮件到文件夹 {target_folder_id}")
         return True
 

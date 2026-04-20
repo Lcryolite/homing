@@ -246,11 +246,7 @@ class EmailOperationsManager:
             if not email_ids:
                 return True
 
-            # 批量更新
-            placeholders = ",".join("?" for _ in email_ids)
-            sql = f"UPDATE emails SET is_read = 1 WHERE id IN ({placeholders})"
-            db.execute(sql, tuple(email_ids))
-
+            db.update_safe("emails", {"is_read": 1}, {"id": email_ids})
             logging.info(f"批量标记 {len(email_ids)} 封邮件为已读")
             return True
 
@@ -267,11 +263,7 @@ class EmailOperationsManager:
             if not email_ids:
                 return True
 
-            # 批量更新
-            placeholders = ",".join("?" for _ in email_ids)
-            sql = f"UPDATE emails SET is_read = 0 WHERE id IN ({placeholders})"
-            db.execute(sql, tuple(email_ids))
-
+            db.update_safe("emails", {"is_read": 0}, {"id": email_ids})
             logging.info(f"批量标记 {len(email_ids)} 封邮件为未读")
             return True
 
@@ -288,11 +280,7 @@ class EmailOperationsManager:
             if not email_ids:
                 return True
 
-            # 批量更新
-            placeholders = ",".join("?" for _ in email_ids)
-            sql = f"UPDATE emails SET is_flagged = 1 WHERE id IN ({placeholders})"
-            db.execute(sql, tuple(email_ids))
-
+            db.update_safe("emails", {"is_flagged": 1}, {"id": email_ids})
             logging.info(f"批量标记 {len(email_ids)} 封邮件为星标")
             return True
 
@@ -309,11 +297,7 @@ class EmailOperationsManager:
             if not email_ids:
                 return True
 
-            # 批量更新
-            placeholders = ",".join("?" for _ in email_ids)
-            sql = f"UPDATE emails SET is_flagged = 0 WHERE id IN ({placeholders})"
-            db.execute(sql, tuple(email_ids))
-
+            db.update_safe("emails", {"is_flagged": 0}, {"id": email_ids})
             logging.info(f"批量取消 {len(email_ids)} 封邮件的星标")
             return True
 
@@ -332,17 +316,12 @@ class EmailOperationsManager:
             if not email_ids or not target_folder_id:
                 return False
 
-            # 验证目标文件夹存在
             folder = Folder.get_by_id(target_folder_id)
             if not folder:
                 logging.error(f"目标文件夹不存在: ID={target_folder_id}")
                 return False
 
-            # 批量更新文件夹
-            placeholders = ",".join("?" for _ in email_ids)
-            sql = f"UPDATE emails SET folder_id = ? WHERE id IN ({placeholders})"
-            db.execute(sql, (target_folder_id, *email_ids))
-
+            db.update_safe("emails", {"folder_id": target_folder_id}, {"id": email_ids})
             logging.info(f"批量移动 {len(email_ids)} 封邮件到文件夹 {folder.name}")
             return True
 
@@ -362,20 +341,14 @@ class EmailOperationsManager:
                 return True
 
             if permanent:
-                # 永久删除
-                placeholders = ",".join("?" for _ in email_ids)
-                sql = f"DELETE FROM emails WHERE id IN ({placeholders})"
-                db.execute(sql, tuple(email_ids))
+                db.delete_safe("emails", {"id": email_ids})
                 logging.info(f"永久删除了 {len(email_ids)} 封邮件")
             else:
-                # 移动到垃圾箱
                 trash_folder = Folder.get_by_name(account_id, "Trash")
                 if trash_folder:
-                    placeholders = ",".join("?" for _ in email_ids)
-                    sql = (
-                        f"UPDATE emails SET folder_id = ? WHERE id IN ({placeholders})"
+                    db.update_safe(
+                        "emails", {"folder_id": trash_folder.id}, {"id": email_ids}
                     )
-                    db.execute(sql, (trash_folder.id, *email_ids))
                     logging.info(f"移动 {len(email_ids)} 封邮件到垃圾箱")
                 else:
                     logging.error("找不到垃圾箱文件夹")

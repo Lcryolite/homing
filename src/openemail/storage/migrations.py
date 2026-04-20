@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -277,5 +277,10 @@ MIGRATIONS: dict[int, list[str]] = {
         # 批次 E-F：OAuth和验证增强
         """ALTER TABLE accounts ADD COLUMN metadata TEXT DEFAULT ''""",
         # 为metadata添加注释：JSON序列化的元数据，用于存储风险信息等
+    ],
+    7: [
+        # RFC 6154 SPECIAL-USE 支持
+        """ALTER TABLE folders ADD COLUMN special_use TEXT DEFAULT ''""",
+        """CREATE INDEX IF NOT EXISTS idx_folders_special_use ON folders(account_id, special_use)""",
     ],
 }
