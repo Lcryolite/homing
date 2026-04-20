@@ -129,7 +129,6 @@ class ActiveSyncClient:
                 url,
                 data=xml_request,
                 headers=headers,
-                ssl=False,  # 对于测试环境
             ) as response:
                 if response.status == 200:
                     # 解析响应
@@ -240,9 +239,20 @@ class ActiveSyncClient:
             self.session = None
 
     def __del__(self):
-        """析构函数确保会话关闭"""
-        if self.session:
-            asyncio.create_task(self.disconnect())
+        """析构函数确保会话关闭 - 不再在GC时创建异步任务"""
+        # asyncio.create_task 在 __del__ 中不安全（可能没有运行中的事件循环）
+        # 调用方应显式调用 disconnect()，这里只做同步关闭尝试
+        if self.session and not self.session.closed:
+            try:
+                import warnings
+                warnings.warn(
+                    f"ActiveSyncClient for {self.account.email} was not properly disconnected. "
+                    "Call disconnect() explicitly.",
+                    ResourceWarning,
+                    stacklevel=2,
+                )
+            except Exception:
+                pass
 
 
 class MockActiveSyncClient(ActiveSyncClient):
