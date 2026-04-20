@@ -79,6 +79,10 @@ class SyncWorker(QThread):
     async def _sync_account(self, account: Account) -> int:
         total_synced = 0
 
+        # OAuth2: 刷新过期 token
+        if account.is_oauth_enabled() and not account.check_and_refresh_token():
+            raise ConnectionError(f"OAuth token refresh failed for {account.email}, re-authorization needed")
+
         if account.protocol == "imap":
             total_synced = await self._sync_imap(account)
         elif account.protocol == "pop3":
@@ -197,6 +201,9 @@ class IdleWorker(QThread):
         while self._running:
             try:
                 client = IMAPClient(account)
+                # OAuth2: 刷新过期 token
+                if account.is_oauth_enabled() and not account.check_and_refresh_token():
+                    raise ConnectionError(f"OAuth token refresh failed for {account.email}, re-authorization needed")
                 if not await client.connect():
                     raise ConnectionError("Cannot connect for IDLE")
 

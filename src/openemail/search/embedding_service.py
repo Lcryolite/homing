@@ -36,7 +36,7 @@ class EmailEmbedding:
     @staticmethod
     def from_row(row: dict) -> EmailEmbedding:
         np = _get_np()
-        embedding_bytes = row.get("embedding_blob")
+        embedding_bytes = row["embedding_blob"]
         if embedding_bytes and np is not None:
             embedding = np.frombuffer(embedding_bytes, dtype=np.float32)
         elif np is not None:
@@ -50,7 +50,7 @@ class EmailEmbedding:
             embedding=embedding,
             text_hash=row["text_hash"] or "",
             created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row.get("updated_at", row["created_at"])),
+            updated_at=datetime.fromisoformat(row["updated_at"] or row["created_at"]),
         )
 
 
@@ -345,8 +345,8 @@ class EmbeddingStorage:
             if not row:
                 return []
 
-            similar_ids_str = row.get("similar_email_ids")
-            scores_str = row.get("similarity_scores")
+            similar_ids_str = row["similar_email_ids"]
+            scores_str = row["similarity_scores"]
 
             if not similar_ids_str or not scores_str:
                 return []

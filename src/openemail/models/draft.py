@@ -145,26 +145,27 @@ class Draft:
         return [cls._from_row(r) for r in rows]
 
     @classmethod
-    def _from_row(cls, row: dict) -> Draft:
+    def _from_row(cls, row) -> Draft:
+        r = dict(row)  # sqlite3.Row -> dict
         return cls(
-            id=row["id"],
-            account_id=row["account_id"],
-            folder_id=row["folder_id"] if "folder_id" in row.keys() else None,
-            message_id=row["message_id"] or "",
-            uid=row["uid"] or "",
-            from_addr=row["from_addr"] or "",
-            to_addrs=row["to_addrs"] or "",
-            cc_addrs=row["cc_addrs"] or "",
-            bcc_addrs=row["bcc_addrs"] or "",
-            subject=row["subject"] or "",
-            body_text=row["body_text"] or "",
-            body_html=row["body_html"] or "",
-            attachments=row["attachments"] or "{}",
-            in_reply_to=row["in_reply_to"] or "",
-            references=row["references"] or "",
-            is_local_only=bool(row.get("is_local_only", 1)),
-            is_syncing=bool(row.get("is_syncing", 0)),
-            created_at=row.get("created_at"),
-            updated_at=row.get("updated_at"),
-            synced_at=row.get("synced_at"),
+            id=r["id"],
+            account_id=r["account_id"],
+            folder_id=r.get("folder_id"),
+            message_id=r.get("message_id") or "",
+            uid=r.get("uid") or "",
+            from_addr=r.get("from_addr") or "",
+            to_addrs=r.get("to_addrs") or "",
+            cc_addrs=r.get("cc_addrs") or "",
+            bcc_addrs=r.get("bcc_addrs") or "",
+            subject=r.get("subject") or "",
+            body_text=r.get("body_text") or "",
+            body_html=r.get("body_html") or "",
+            attachments=r.get("attachments") or "{}",
+            in_reply_to=r.get("in_reply_to") or "",
+            references=r.get("references") or "",
+            is_local_only=bool(r.get("is_local_only", 1)),
+            is_syncing=bool(r.get("is_syncing", 0)),
+            created_at=r.get("created_at"),
+            updated_at=r.get("updated_at"),
+            synced_at=r.get("synced_at"),
         )

@@ -89,13 +89,14 @@ class EmailThread:
         return cls._from_row(row) if row else None
 
     @classmethod
-    def _from_row(cls, row: dict) -> EmailThread:
+    def _from_row(cls, row) -> EmailThread:
+        r = dict(row)  # sqlite3.Row -> dict
         return cls(
-            id=row["id"],
-            account_id=row["account_id"],
-            subject=row["subject"] or "",
-            message_count=row.get("message_count", 1),
-            last_date=row.get("last_date"),
-            created_at=row.get("created_at"),
-            updated_at=row.get("updated_at"),
+            id=r["id"],
+            account_id=r["account_id"],
+            subject=r.get("subject") or "",
+            message_count=r.get("message_count", 1),
+            last_date=r.get("last_date"),
+            created_at=r.get("created_at"),
+            updated_at=r.get("updated_at"),
         )

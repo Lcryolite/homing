@@ -392,10 +392,10 @@ class SettingsPageWidget(QWidget):
             self._filter_table.setItem(i, 0, QTableWidgetItem(row["name"] or ""))
             self._filter_table.setItem(i, 1, QTableWidgetItem(row["rule_type"] or ""))
             self._filter_table.setItem(
-                i, 2, QTableWidgetItem(row.get("match_field", "all") or "all")
+                i, 2, QTableWidgetItem(row["match_field"] or "all")
             )
-            action_text = row.get("action", "") or ""
-            action_target = row.get("action_target", "") or ""
+            action_text = row["action"] or ""
+            action_target = row["action_target"] or ""
             if action_target:
                 action_text = f"{action_text} → {action_target}"
             self._filter_table.setItem(i, 3, QTableWidgetItem(action_text))

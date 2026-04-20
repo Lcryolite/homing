@@ -207,32 +207,33 @@ class Email:
         return row["c"] if row else 0
 
     @classmethod
-    def _from_row(cls, row: dict) -> Email:
+    def _from_row(cls, row) -> Email:
+        r = dict(row)  # sqlite3.Row -> dict, 支持 .get()
         return cls(
-            id=row["id"],
-            account_id=row["account_id"],
-            folder_id=row["folder_id"],
-            uid=row.get("uid") or "",
-            message_id=row.get("message_id") or "",
-            subject=row.get("subject") or "",
-            sender_name=row.get("sender_name") or "",
-            sender_addr=row.get("sender_addr") or "",
-            to_addrs=row.get("to_addrs") or "[]",
-            cc_addrs=row.get("cc_addrs") or "[]",
-            bcc_addrs=row.get("bcc_addrs") or "[]",
-            date=row.get("date") or "",
-            size=row.get("size") or 0,
-            is_read=bool(row.get("is_read")),
-            is_flagged=bool(row.get("is_flagged")),
-            is_deleted=bool(row.get("is_deleted")),
-            is_spam=bool(row.get("is_spam")),
-            spam_reason=row.get("spam_reason") or "",
-            has_attachment=bool(row.get("has_attachment")),
-            preview_text=row.get("preview_text") or "",
-            file_path=row.get("file_path") or "",
-            in_reply_to=row["in_reply_to"] if "in_reply_to" in row.keys() else "",
-            references=row["references"] if "references" in row.keys() else "",
-            created_at=row.get("created_at") or "",
+            id=r["id"],
+            account_id=r["account_id"],
+            folder_id=r["folder_id"],
+            uid=r.get("uid") or "",
+            message_id=r.get("message_id") or "",
+            subject=r.get("subject") or "",
+            sender_name=r.get("sender_name") or "",
+            sender_addr=r.get("sender_addr") or "",
+            to_addrs=r.get("to_addrs") or "[]",
+            cc_addrs=r.get("cc_addrs") or "[]",
+            bcc_addrs=r.get("bcc_addrs") or "[]",
+            date=r.get("date") or "",
+            size=r.get("size") or 0,
+            is_read=bool(r.get("is_read")),
+            is_flagged=bool(r.get("is_flagged")),
+            is_deleted=bool(r.get("is_deleted")),
+            is_spam=bool(r.get("is_spam")),
+            spam_reason=r.get("spam_reason") or "",
+            has_attachment=bool(r.get("has_attachment")),
+            preview_text=r.get("preview_text") or "",
+            file_path=r.get("file_path") or "",
+            in_reply_to=r.get("in_reply_to") or "",
+            references=r.get("references") or "",
+            created_at=r.get("created_at") or "",
         )
 
     def get_tags(self) -> list[Tag]:

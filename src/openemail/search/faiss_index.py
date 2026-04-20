@@ -115,7 +115,7 @@ class FaissIndexManager:
                             self._embeddings_cache[email_id] = embedding
                 except Exception as e:
                     logger.warning(
-                        f"Error processing embedding for email {row.get('email_id')}: {e}"
+                        f"Error processing embedding for email {row['email_id']}: {e}"
                     )
                     continue
 
@@ -277,7 +277,7 @@ class FaissIndexManager:
                             "SELECT account_id FROM email_embeddings WHERE email_id = ?",
                             (email_id,),
                         )
-                        if not row or row.get("account_id") != account_id:
+                        if not row or row["account_id"] != account_id:
                             continue
 
                     # 距离转换为相似度（Faiss 内积越大越相似）
