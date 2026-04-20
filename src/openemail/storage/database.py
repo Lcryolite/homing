@@ -1,3 +1,4 @@
+import logging
 import re
 import sqlite3
 from pathlib import Path
@@ -6,6 +7,8 @@ from typing import Any, Union, List, Dict, Tuple
 from openemail.config import settings
 from openemail.storage.migrations import SCHEMA_VERSION, MIGRATIONS
 from openemail.utils.exceptions import safe_execute
+
+logger = logging.getLogger(__name__)
 
 
 class Database:
@@ -55,28 +58,28 @@ class Database:
         row = cur.fetchone()
         current = row[0] if row and row[0] is not None else 0
 
-        print(f"数据库当前版本: {current}, 目标版本: {SCHEMA_VERSION}")
+        logger.info("数据库当前版本: %d, 目标版本: %d", current, SCHEMA_VERSION)
 
         for version in range(current + 1, SCHEMA_VERSION + 1):
             statements = MIGRATIONS.get(version, [])
             if not statements:
-                print(f"版本 {version}: 无迁移语句")
+                logger.debug("版本 %d: 无迁移语句", version)
                 continue
 
-            print(f"执行版本 {version} 迁移...")
+            logger.info("执行版本 %d 迁移...", version)
             for stmt in statements:
                 try:
                     cur.execute(stmt)
                 except sqlite3.OperationalError as e:
                     if "duplicate column name" in str(e) or "already exists" in str(e):
-                        print(f"  跳过已存在的操作: {stmt[:60]}...")
+                        logger.debug("跳过已存在的操作: %s...", stmt[:60])
                     else:
-                        print(f"  迁移错误: {e}")
+                        logger.error("迁移错误: %s", e)
                         raise
             cur.execute(
                 "INSERT OR REPLACE INTO schema_version (version) VALUES (?)", (version,)
             )
-            print(f"版本 {version} 迁移完成")
+            logger.info("版本 %d 迁移完成", version)
         self._conn.commit()
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:

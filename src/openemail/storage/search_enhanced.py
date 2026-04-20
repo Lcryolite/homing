@@ -232,7 +232,7 @@ class EnhancedSearchEngine:
                             "icon": "👤",
                         }
                     )
-            except:
+            except Exception:
                 pass
 
         # 2. 搜索主题建议
@@ -542,7 +542,7 @@ class EnhancedSearchEngine:
                     END
                 """)
         except sqlite3.Error as e:
-            print(f"创建附件FTS表失败: {e}")
+            logger.error("创建附件FTS表失败: %s", e)
 
     @staticmethod
     def generate_search_snippets(
@@ -612,7 +612,7 @@ class EnhancedSearchEngine:
                     "searched_at": datetime.now().isoformat(),
                 },
             )
-        except:
+        except Exception:
             pass  # 如果表不存在，忽略
 
     @staticmethod
@@ -647,7 +647,7 @@ class EnhancedSearchEngine:
                 }
                 for row in rows
             ]
-        except:
+        except Exception:
             return []  # 如果表不存在，返回空列表
 
 
