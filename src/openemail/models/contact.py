@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-import json
 
 from openemail.storage.database import db
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -279,7 +282,7 @@ class Contact:
         try:
             import vobject
         except ImportError:
-            print("VCard导入需要vobject库: pip install vobject")
+            logger.warning("VCard导入需要vobject库: pip install vobject")
             return []
 
         contacts = []
@@ -457,11 +460,11 @@ def ensure_contact_tables():
             db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_contacts_favorite ON contacts(is_favorite)"
             )
-        except:
+        except Exception:
             # 列不存在，跳过这个索引
             pass
         db.execute("CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(name)")
-    except:
+    except Exception:
         # contacts表可能还不存在，跳过索引创建
         # 表会在migrations.py中创建
         pass

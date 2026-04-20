@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -8,6 +9,8 @@ from typing import List, Optional, Dict, Any, Set
 import sqlite3
 
 from openemail.storage.database import db
+
+logger = logging.getLogger(__name__)
 
 
 class LabelType(Enum):
@@ -175,7 +178,7 @@ class Label:
 
             return True
         except sqlite3.Error as e:
-            print(f"添加标签到邮件失败: {e}")
+            logger.error("添加标签到邮件失败: %s", e)
             return False
 
     def remove_from_email(self, email_id: int) -> bool:
@@ -482,7 +485,7 @@ class LabelEmailRel:
             )
             return True
         except sqlite3.Error as e:
-            print(f"创建邮件标签关联失败: {e}")
+            logger.error("创建邮件标签关联失败: %s", e)
             return False
 
     @classmethod
@@ -495,7 +498,7 @@ class LabelEmailRel:
             )
             return True
         except sqlite3.Error as e:
-            print(f"删除邮件标签关联失败: {e}")
+            logger.error("删除邮件标签关联失败: %s", e)
             return False
 
     @classmethod
@@ -530,7 +533,7 @@ class LabelEmailRel:
             db.execute("DELETE FROM email_labels WHERE email_id = ?", (email_id,))
             return True
         except sqlite3.Error as e:
-            print(f"删除邮件标签失败: {e}")
+            logger.error("删除邮件标签失败: %s", e)
             return False
 
     @classmethod
@@ -540,7 +543,7 @@ class LabelEmailRel:
             db.execute("DELETE FROM email_labels WHERE label_id = ?", (label_id,))
             return True
         except sqlite3.Error as e:
-            print(f"删除标签邮件关联失败: {e}")
+            logger.error("删除标签邮件关联失败: %s", e)
             return False
 
 
@@ -618,7 +621,7 @@ def ensure_label_tables():
                 },
             )
 
-    print("标签系统表初始化完成")
+    logger.info("标签系统表初始化完成")
 
 
 # 自动初始化
