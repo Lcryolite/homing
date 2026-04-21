@@ -1,24 +1,21 @@
 from __future__ import annotations
 
-import base64
-import json
 import logging
 import secrets
-import socket
-import threading
 import time
 import webbrowser
 from datetime import datetime, timedelta
 from enum import Enum
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread
-from typing import Any, Optional, Callable, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Callable, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from authlib.integrations.httpx_client import OAuth2Client
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
 
-# Account模型将在方法内部导入以避免循环依赖
+if TYPE_CHECKING:
+    from openemail.models.account import Account
 
 logger = logging.getLogger(__name__)
 

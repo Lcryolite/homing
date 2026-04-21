@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Any, Callable
+from typing import TYPE_CHECKING, Optional, Callable
 
 from openemail.core.oauth2_new import (
     OAuthAuthenticator,
-    OAuthManager,
     OAuthError,
     OAuthErrorCode,
-    get_oauth_error_message,
-    oauth_manager as _oauth_manager,
 )
+
+if TYPE_CHECKING:
+    from openemail.models.account import Account
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,6 @@ OAUTH_CONFIGS = {
 }
 
 _REDIRECT_URI = "http://127.0.0.1:8742"
-
-# 向后兼容的类名
-OAuth2Authenticator = OAuthAuthenticator
-
 
 # 旧的回调处理器已移除，使用oauth2_new.py中的新实现
 

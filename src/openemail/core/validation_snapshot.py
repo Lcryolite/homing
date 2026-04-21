@@ -21,9 +21,11 @@ import hashlib
 import hmac
 import json
 import logging
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, Any, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Dict, Any, Optional
+
+if TYPE_CHECKING:
+    from openemail.core.connection_status import AccountValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +213,6 @@ class ValidationManager:
             snapshot: 验证时的输入快照
             validation_result: 验证结果
         """
-        from openemail.core.connection_status import AccountValidationResult
 
         self._validation_snapshots[test_id] = snapshot
         self._validation_results[test_id] = validation_result
@@ -233,7 +234,6 @@ class ValidationManager:
         Returns:
             如果test_id存在且结果仍然有效，返回验证结果；否则返回None
         """
-        from openemail.core.connection_status import AccountValidationResult
 
         if test_id not in self._validation_results:
             return None
@@ -289,7 +289,6 @@ class ValidationManager:
         from openemail.core.connection_status import (
             ConnectionStatus,
             is_savable,
-            AccountValidationResult,
         )
 
         if target_status == "verified":
