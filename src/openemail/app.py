@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QObject
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import QApplication
 
@@ -141,17 +141,44 @@ def _resolve_theme() -> str:
 def _strip_inline_styles(obj) -> None:
     """Recursively clear inline stylesheets from all child widgets.
 
-    Widgets with property "keep_style"="true" are exempt — they have
-    genuinely custom styles that shouldn't be overridden by QSS.
+    Widgets with property "keep_style"="true" are exempt.
     """
     from PyQt6.QtWidgets import QWidget
 
     if isinstance(obj, QWidget):
         if obj.property("keep_style") != "true":
             obj.setStyleSheet("")
-    # Visit all children
     for child in obj.children():
         _strip_inline_styles(child)
+
+
+class _ThemeEnforcer(QObject):
+    """Global event filter: clears inline styles on every widget Show event.
+
+    This ensures QSS always wins, even for widgets created after theme apply.
+    """
+
+    def eventFilter(self, obj, event):
+        from PyQt6.QtCore import QEvent
+        from PyQt6.QtWidgets import QWidget
+
+        if event.type() == QEvent.Type.Show and isinstance(obj, QWidget):
+            if obj.property("keep_style") != "true":
+                # Only clear if there's an inline style with theme colors
+                ss = obj.styleSheet()
+                if ss and any(
+                    c in ss.upper()
+                    for c in [
+                        "#F7F4EE", "#FBF8F3", "#E8E1D8", "#141413",
+                        "#1E1E2E", "#313244", "#45475A", "#CDD6F4",
+                        "#A6ADC8", "#89B4FA", "#F38BA8",
+                    ]
+                ):
+                    obj.setStyleSheet("")
+        return False
+
+
+_theme_enforcer: _ThemeEnforcer | None = None
 
 
 def apply_theme() -> None:
@@ -163,10 +190,12 @@ def apply_theme() -> None:
         stylesheet = qss_file.read_text(encoding="utf-8")
         _app.setStyleSheet(stylesheet)
         # Strip inline stylesheets from all widgets so QSS takes full control.
-        # This prevents hardcoded light colors from leaking into dark mode
-        # (and vice versa). Widgets that truly need custom non-theme styles
-        # can set a property "keep_style"="true" to be exempt.
         _strip_inline_styles(_app)
+        # Install global event filter to catch widgets created after theme apply
+        global _theme_enforcer
+        if _theme_enforcer is None:
+            _theme_enforcer = _ThemeEnforcer()
+            _app.installEventFilter(_theme_enforcer)
 
 
 def create_app() -> tuple[QApplication, "MainWindow"]:
