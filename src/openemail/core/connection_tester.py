@@ -106,7 +106,6 @@ class ConnectionTestResult:
 
 
 @dataclass
-@dataclass
 class ConnectionTestSummary:
     """连接测试汇总结果"""
 

@@ -1026,9 +1026,9 @@ class AccountDialog(QDialog):
 
                     status_message = "连接测试完成:\n\n" + "\n".join(details)
                     if inbound_success:
-                        status_message += "\n\n✅ 收信协议验证通过"
+                        status_message += "\n\n✓ 收信协议验证通过"
                     if outbound_success:
-                        status_message += "\n✅ 发信协议验证通过"
+                        status_message += "\n✓ 发信协议验证通过"
 
                     QMessageBox.information(self, "连接测试结果", status_message)
 
@@ -1040,7 +1040,27 @@ class AccountDialog(QDialog):
                     else:
                         self._update_status_label("连接成功")
             else:
-                # 所有测试都失败
+                # 所有测试都失败 — 展示分类建议
+                from openemail.core.connection_status import get_suggestions_for_categories
+
+                error_categories = []
+                if summary.validation_result and summary.validation_result.error_categories:
+                    error_categories = summary.validation_result.error_categories
+
+                suggestions = get_suggestions_for_categories(error_categories)
+
+                details = []
+                for result in summary.results:
+                    latency = f"{result.latency_ms}ms"
+                    details.append(
+                        f"✗ {result.protocol.value.upper()}: {result.error_message} ({latency})"
+                    )
+
+                error_msg = "连接测试失败:\n\n" + "\n".join(details)
+                if suggestions:
+                    error_msg += "\n\n建议:\n" + "\n".join(f"• {s}" for s in suggestions)
+
+                QMessageBox.warning(self, "连接测试结果", error_msg)
                 self._show_test_error("所有协议连接失败")
                 self._update_status_label("连接失败")
 

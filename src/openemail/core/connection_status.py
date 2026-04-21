@@ -152,53 +152,91 @@ def get_next_status(
     """
     根据当前状态和验证结果/用户操作计算下一个状态
 
-    Args:
-        current_status: 当前连接状态
-        validation_result: 验证结果
-        user_action: 用户操作（enable/disable/retry等）
-
-    Returns:
-        下一个合法的连接状态
+    使用 error_categories 作为主要判断依据，不依赖字符串匹配。
     """
     # 用户操作处理
     if user_action == "disable":
         return ConnectionStatus.DISABLED
     elif user_action == "enable" and current_status == ConnectionStatus.DISABLED:
-        # 从禁用恢复，回到未验证状态
         return ConnectionStatus.UNVERIFIED
     elif user_action == "retry":
         return ConnectionStatus.VALIDATING
 
-    # 验证结果处理
+    # 验证结果处理（基于 error_categories，不依赖字符串匹配）
     if validation_result:
-        if validation_result.error_message:
-            # 有错误信息
-            if any(
-                msg in validation_result.error_message.lower()
-                for msg in ["auth", "认证", "password", "密码", "invalid", "无效"]
-            ):
-                return ConnectionStatus.AUTH_FAILED
-            else:
-                return ConnectionStatus.NETWORK_FAILED
-        elif validation_result.inbound_success:
+        error_categories = validation_result.error_categories or []
+
+        if validation_result.inbound_success:
             # 收信验证通过
             return ConnectionStatus.VERIFIED
+        elif any(
+            cat in error_categories
+            for cat in ["auth_error", "authentication_error"]
+        ):
+            return ConnectionStatus.AUTH_FAILED
+        elif any(
+            cat in error_categories
+            for cat in [
+                "network_error",
+                "dns_error",
+                "ssl_error",
+                "timeout_error",
+                "connection_error",
+            ]
+        ):
+            return ConnectionStatus.NETWORK_FAILED
+        elif validation_result.error_message:
+            # 有错误信息但无明确分类，根据 inbound_success 判断
+            if not validation_result.inbound_success:
+                return ConnectionStatus.AUTH_FAILED
+            return ConnectionStatus.NETWORK_FAILED
         else:
-            # 验证结果但收信未通过
             return ConnectionStatus.AUTH_FAILED
 
     # 默认状态转换
     if current_status == ConnectionStatus.DRAFT:
-        # 从草稿开始验证
         return ConnectionStatus.VALIDATING
     elif current_status == ConnectionStatus.VALIDATING:
-        # 验证中 -> 转为unverified等待结果
         return ConnectionStatus.UNVERIFIED
     elif current_status == ConnectionStatus.UNVERIFIED:
-        # 保持未验证状态
         return ConnectionStatus.UNVERIFIED
 
     return current_status
+
+
+def get_suggestions_for_categories(
+    error_categories: list[str],
+) -> list[str]:
+    """
+    将错误类别映射为用户可读的修复建议
+
+    Returns:
+        建议列表，每条建议都是用户可操作的行动
+    """
+    suggestions: list[str] = []
+    seen_suggestions: set[str] = set()
+
+    category_suggestions = {
+        "auth_error": "检查用户名和密码是否正确",
+        "authentication_error": "检查用户名和密码是否正确",
+        "network_error": "检查网络连接和服务器地址",
+        "dns_error": "DNS 解析失败，检查服务器地址拼写",
+        "ssl_error": "SSL/TLS 连接失败，检查加密设置",
+        "timeout_error": "连接超时，检查网络或服务器地址",
+        "configuration_error": "检查账户配置填写是否完整",
+        "protocol_error": "服务器协议响应异常，检查端口和协议设置",
+        "server_error": "服务器端错误，请稍后重试",
+        "server_rejected": "服务器拒绝连接，检查账户权限",
+        "unsupported_error": "该协议或配置暂不支持",
+    }
+
+    for cat in error_categories:
+        text = category_suggestions.get(cat)
+        if text and text not in seen_suggestions:
+            suggestions.append(text)
+            seen_suggestions.add(text)
+
+    return suggestions
 
 
 def can_transition(from_status: ConnectionStatus, to_status: ConnectionStatus) -> bool:
