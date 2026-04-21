@@ -302,10 +302,9 @@ def run_account_cleanup() -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+    from openemail.utils.logging_config import setup_logging
+
+    setup_logging()
 
     # 运行清理
     run_account_cleanup()

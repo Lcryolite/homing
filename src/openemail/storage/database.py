@@ -85,16 +85,27 @@ class Database:
 
             logger.info("执行版本 %d 迁移... (备份: %s)", version, backup_path)
             migration_ok = True
-            for stmt in statements:
-                try:
-                    cur.execute(stmt)
-                except sqlite3.OperationalError as e:
-                    if "duplicate column name" in str(e) or "already exists" in str(e):
-                        logger.debug("跳过已存在的操作: %s...", stmt[:60])
-                    else:
-                        logger.error("迁移 v%d 错误: %s", version, e)
-                        migration_ok = False
-                        break
+            try:
+                for stmt in statements:
+                    try:
+                        cur.execute(stmt)
+                    except sqlite3.OperationalError as e:
+                        if "duplicate column name" in str(e) or "already exists" in str(
+                            e
+                        ):
+                            logger.debug("跳过已存在的操作: %s...", stmt[:60])
+                        else:
+                            logger.error("迁移 v%d 错误: %s", version, e)
+                            migration_ok = False
+                            break
+                if migration_ok:
+                    self._conn.commit()
+                else:
+                    self._conn.rollback()
+            except Exception as e:
+                logger.error("迁移 v%d 异常: %s", version, e)
+                self._conn.rollback()
+                migration_ok = False
 
             if not migration_ok:
                 # 恢复备份

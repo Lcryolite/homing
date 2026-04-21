@@ -10,7 +10,11 @@ from openemail.storage.migrations import SCHEMA_VERSION, MIGRATIONS, ROLLBACKS
 
 @pytest.fixture
 def isolated_db(tmp_path):
-    """Create a fresh Database instance with a temp db path."""
+    """Create a fresh Database instance with a temp db path.
+
+    Uses same pattern as conftest.temp_db but named distinctly to avoid
+    confusion with test_database_security.py.
+    """
     db_path = tmp_path / "test.db"
     db = Database.__new__(Database)
     db._db_path = db_path

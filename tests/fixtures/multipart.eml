@@ -1,0 +1,21 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: Multipart test
+Date: Mon, 20 Jan 2026 10:10:00 +0800
+Message-ID: <multipart-001@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain; charset=utf-8
+
+Hello Bob,
+
+This is the plain text version.
+
+--boundary123
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>Hello Bob,</p><p>This is the <b>HTML</b> version.</p></body></html>
+
+--boundary123--

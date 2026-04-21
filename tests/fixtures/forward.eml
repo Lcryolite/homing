@@ -1,0 +1,20 @@
+From: Alice <alice@example.com>
+To: Carol <carol@example.com>
+Subject: Fwd: Plain text test
+Date: Mon, 20 Jan 2026 12:00:00 +0800
+Message-ID: <forward-001@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+---------- Forwarded message ---------
+From: Alice <alice@example.com>
+Date: Mon, 20 Jan 2026 10:00
+Subject: Plain text test
+To: Bob <bob@example.com>
+
+Hello Bob,
+
+This is a plain text email for testing purposes.
+
+Best regards,
+Alice

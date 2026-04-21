@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import QApplication
 
 from openemail.config import settings
 from openemail.storage.database import db
+from openemail.utils.logging_config import setup_logging
 from openemail.utils.exceptions import (
     install_global_handler,
     detect_last_crash,
@@ -104,6 +105,9 @@ def apply_theme() -> None:
 
 def create_app() -> tuple[QApplication, "MainWindow"]:
     global _app, _main_window
+
+    # 初始化统一日志系统（最先执行）
+    setup_logging()
 
     # 确保异步依赖可用
     _ensure_async_deps()

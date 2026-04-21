@@ -1,0 +1,21 @@
+From: Bob <bob@example.com>
+To: Alice <alice@example.com>
+Subject: Re: Plain text test
+Date: Mon, 20 Jan 2026 11:00:00 +0800
+Message-ID: <reply-001@example.com>
+In-Reply-To: <plain-text-001@example.com>
+References: <plain-text-001@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+On 2026-01-20 10:00, Alice wrote:
+> Hello Bob,
+>
+> This is a plain text email for testing purposes.
+
+Hi Alice,
+
+Thanks for your message. This is my reply.
+
+Best,
+Bob

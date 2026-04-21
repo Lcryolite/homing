@@ -955,15 +955,15 @@ class ConnectionTestWorker(threading.Thread):
 
 def test_connection_tester():
     """测试修复后的ConnectionTester"""
-    print("测试修复后的ConnectionTester")
-    print("=" * 50)
+    logger.info("测试修复后的ConnectionTester")
+    logger.info("=" * 50)
 
     # 测试数据
     account_data = {
         "imap_host": "imap.example.com",
         "imap_port": 993,
         "email": "test@example.com",
-        "password": "wrongpassword",
+        "password": "***",
         "ssl_mode": "ssl",
     }
 
@@ -971,14 +971,13 @@ def test_connection_tester():
     worker.run()  # 直接运行，不在线程中
 
     for result in worker.results:
-        print(f"协议: {result.protocol.value}")
-        print(f"成功: {result.success}")
-        print(f"状态: {result.status.value}")
-        print(f"级别: {result.level.value}")
-        print(f"错误信息: {result.error_message}")
+        logger.info("协议: %s", result.protocol.value)
+        logger.info("成功: %s", result.success)
+        logger.info("状态: %s", result.status.value)
+        logger.info("级别: %s", result.level.value)
+        logger.info("错误信息: %s", result.error_message)
         if result.error_categories:
-            print(f"错误分类: {[c.value for c in result.error_categories]}")
-        print()
+            logger.info("错误分类: %s", [c.value for c in result.error_categories])
 
 
 # ========== 单例管理 ==========

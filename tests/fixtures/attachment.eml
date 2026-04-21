@@ -1,0 +1,21 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: Attachment test
+Date: Mon, 20 Jan 2026 10:15:00 +0800
+Message-ID: <attachment-001@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="attach-boundary"
+
+--attach-boundary
+Content-Type: text/plain; charset=utf-8
+
+Please find the attached file.
+
+--attach-boundary
+Content-Type: text/csv; name="data.csv"
+Content-Disposition: attachment; filename="data.csv"
+Content-Transfer-Encoding: base64
+
+TmFtZSxBZ2UKQWxpY2UsMzAKQm9iLDI1
+
+--attach-boundary--

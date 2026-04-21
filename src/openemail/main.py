@@ -1,7 +1,10 @@
 import argparse
+import logging
 import sys
 
 from openemail.app import create_app
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> int:
@@ -43,11 +46,8 @@ def main() -> int:
 
         return ret
 
-    except Exception as e:
-        import traceback
-
-        print(f"应用程序启动失败: {e}")
-        print(traceback.format_exc())
+    except Exception:
+        logger.exception("应用程序启动失败")
         return 1
 
 
