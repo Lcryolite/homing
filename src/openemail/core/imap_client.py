@@ -3,14 +3,14 @@ from __future__ import annotations
 import asyncio
 import email
 import logging
-
-logger = logging.getLogger(__name__)
 from email import policy
-from email.utils import parsedate_to_datetime
-from openemail.core.mail_helpers import decode_header_value, parse_address_list, extract_preview
+from email.header import decode_header
+from email.utils import parsedate_to_datetime, parseaddr
 from typing import Any
 
-# 条件导入aioimaplib
+logger = logging.getLogger(__name__)
+
+# Conditional import for aioimaplib
 try:
     import aioimaplib
 
@@ -108,11 +108,10 @@ except ImportError:
 
     aioimaplib = _MockAioimaplib()
 
-from openemail.models.account import Account
-from openemail.models.email import Email
-from openemail.models.folder import Folder
-from openemail.storage.database import db
-from openemail.storage.mail_store import mail_store
+from openemail.models.account import Account  # noqa: E402
+from openemail.models.email import Email  # noqa: E402
+from openemail.storage.database import db  # noqa: E402
+from openemail.storage.mail_store import mail_store  # noqa: E402
 
 
 def decode_header_value(value: str | None) -> str:
@@ -518,6 +517,6 @@ class IMAPClient:
                 has_attachment=has_attachment,
                 preview_text=extract_preview(preview_text),
             )
-        except Exception as e:
+        except Exception:
             logger.error("Error parsing email uid={uid}: {e}")
             return None

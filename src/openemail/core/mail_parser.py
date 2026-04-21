@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 import email
-import os
+import logging
 from email import policy
 from email.header import decode_header
-from email.message import EmailMessage
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import formataddr, parseaddr, parsedate_to_datetime
+from email.utils import parseaddr, parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
-from openemail.storage.mail_store import mail_store
-from openemail.core.mail_helpers import decode_header_value, parse_address_list
+logger = logging.getLogger(__name__)
 
 
 def decode_header_value(value: str | None) -> str:

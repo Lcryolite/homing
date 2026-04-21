@@ -1,22 +1,20 @@
 from __future__ import annotations
 
-import asyncio
 import email
+import json
 import logging
 import poplib
 import socket
 import ssl
 from email import policy
-from email.utils import parsedate_to_datetime
-from openemail.core.mail_helpers import decode_header_value, parse_address_list, extract_preview
-from typing import Any
+from email.header import decode_header
+from email.utils import parsedate_to_datetime, parseaddr
 
 from openemail.models.account import Account
 from openemail.models.email import Email
-from openemail.models.folder import Folder
+from openemail.storage.mail_store import mail_store
 
 logger = logging.getLogger(__name__)
-from openemail.storage.mail_store import mail_store
 
 
 def decode_header_value(value: str | None) -> str:
@@ -158,7 +156,6 @@ class POP3Client:
             return 0
 
         from openemail.storage.database import db
-        import json
 
         uidl_list = self.get_message_uidl_list()
         existing_uids = {
