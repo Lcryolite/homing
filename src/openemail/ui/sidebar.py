@@ -5,7 +5,6 @@ from enum import IntEnum
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QFrame,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -115,9 +114,6 @@ class ComposeButton(QPushButton):
                 font-size: 14px;
                 font-weight: bold;
             }
-            QPushButton:hover {
-                opacity: 0.9;
-            }
         """)
 
 
@@ -132,6 +128,60 @@ class SectionHeader(QLabel):
                 letter-spacing: 1px;
             }
         """)
+
+
+class CollapsibleSection(QWidget):
+    """可折叠的二级分组"""
+
+    toggled = pyqtSignal(bool)
+
+    def __init__(self, title: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._is_collapsed = False
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(2)
+
+        # Toggle header
+        self._toggle_btn = QPushButton(f"  ▸  {title}")
+        self._toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._toggle_btn.setStyleSheet("""
+            QPushButton {
+                text-align: left;
+                padding: 10px 12px 4px 12px;
+                border: none;
+                font-size: 11px;
+                font-weight: bold;
+                letter-spacing: 1px;
+            }
+        """)
+        self._toggle_btn.clicked.connect(self._toggle)
+        main_layout.addWidget(self._toggle_btn)
+
+        # Content container
+        self._content = QWidget()
+        self._content_layout = QVBoxLayout(self._content)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
+        self._content_layout.setSpacing(2)
+        main_layout.addWidget(self._content)
+
+    def _toggle(self) -> None:
+        self._is_collapsed = not self._is_collapsed
+        self._content.setVisible(not self._is_collapsed)
+        arrow = "▸" if self._is_collapsed else "▾"
+        text = self._toggle_btn.text()
+        # Replace the arrow
+        parts = text.split("  ", 2)
+        if len(parts) >= 3:
+            self._toggle_btn.setText(f"  {arrow}  {parts[2]}")
+        self.toggled.emit(not self._is_collapsed)
+
+    def content_layout(self) -> QVBoxLayout:
+        return self._content_layout
+
+    def add_button(self, btn: SidebarButton) -> None:
+        self._content_layout.addWidget(btn)
 
 
 class Sidebar(QWidget):
@@ -150,9 +200,7 @@ class Sidebar(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(0)
 
-        header_layout = QHBoxLayout()
-        header_layout.setContentsMargins(4, 0, 4, 0)
-
+        # App header
         app_label = QLabel("✉  OpenEmail")
         app_label.setStyleSheet("""
             QLabel {
@@ -161,14 +209,12 @@ class Sidebar(QWidget):
                 padding: 4px 0 12px 0;
             }
         """)
-        header_layout.addWidget(app_label)
-        header_layout.addStretch()
-        layout.addLayout(header_layout)
+        layout.addWidget(app_label)
 
+        # Compose button (primary)
         self._compose_btn = ComposeButton()
         self._compose_btn.clicked.connect(self.compose_requested.emit)
         layout.addWidget(self._compose_btn)
-
         layout.addSpacing(8)
 
         scroll = QScrollArea()
@@ -181,9 +227,23 @@ class Sidebar(QWidget):
         self._scroll_layout.setContentsMargins(0, 0, 0, 0)
         self._scroll_layout.setSpacing(2)
 
-        self._scroll_layout.addWidget(SectionHeader("邮件"))
-        self._add_mail_buttons(self._scroll_layout)
+        # === Level 1: Primary mail folders (always visible) ===
+        self._scroll_layout.addWidget(SectionHeader("邮箱"))
+        primary_items = [
+            ("收件箱", Page.MAIL_INBOX),
+            ("已发送", Page.MAIL_SENT),
+            ("草稿", Page.MAIL_DRAFTS),
+            ("归档", Page.MAIL_SPAM),
+            ("已删除", Page.MAIL_TRASH),
+        ]
+        for text, page in primary_items:
+            icon = PAGE_ICONS.get(page, "")
+            btn = self._add_button(self._scroll_layout, text, page, icon)
+            folder_key = [k for k, v in FOLDER_PAGES.items() if v == page]
+            if folder_key:
+                self._folder_buttons[folder_key[0]] = btn
 
+        # Account section (dynamic, shown below primary)
         self._account_section = QWidget()
         self._account_layout = QVBoxLayout(self._account_section)
         self._account_layout.setContentsMargins(0, 0, 0, 0)
@@ -191,53 +251,48 @@ class Sidebar(QWidget):
         self._account_section.setVisible(False)
         self._scroll_layout.addWidget(self._account_section)
 
-        self._scroll_layout.addWidget(SectionHeader("通讯"))
-        self._add_button(
-            self._scroll_layout,
-            "联系人",
-            Page.CONTACTS,
-            PAGE_ICONS.get(Page.CONTACTS, ""),
-        )
+        # === Level 2: Collapsible "Smart Views" ===
+        smart_views = CollapsibleSection("智能视图")
+        smart_views_items = [
+            ("标签", Page.LABELS),
+            ("联系人", Page.CONTACTS),
+        ]
+        for text, page in smart_views_items:
+            icon = PAGE_ICONS.get(page, "")
+            btn = self._add_button(smart_views.content_layout(), text, page, icon)
+            smart_views.add_button(btn)
+        self._scroll_layout.addWidget(smart_views)
 
-        self._scroll_layout.addWidget(SectionHeader("日历与待办"))
-        self._add_button(
-            self._scroll_layout,
-            "日历",
-            Page.CALENDAR,
-            PAGE_ICONS.get(Page.CALENDAR, ""),
-        )
-        self._add_button(
-            self._scroll_layout,
-            "今天",
-            Page.TODO_TODAY,
-            PAGE_ICONS.get(Page.TODO_TODAY, ""),
-        )
-        self._add_button(
-            self._scroll_layout,
-            "本周",
-            Page.TODO_WEEK,
-            PAGE_ICONS.get(Page.TODO_WEEK, ""),
-        )
-        self._add_button(
-            self._scroll_layout,
-            "全部待办",
-            Page.TODO_ALL,
-            PAGE_ICONS.get(Page.TODO_ALL, ""),
-        )
+        # === Level 2: Collapsible "Calendar & Tasks" ===
+        cal_section = CollapsibleSection("日历与待办")
+        cal_items = [
+            ("日历", Page.CALENDAR),
+            ("今天", Page.TODO_TODAY),
+            ("本周", Page.TODO_WEEK),
+            ("全部待办", Page.TODO_ALL),
+        ]
+        for text, page in cal_items:
+            icon = PAGE_ICONS.get(page, "")
+            btn = self._add_button(cal_section.content_layout(), text, page, icon)
+            cal_section.add_button(btn)
+        self._scroll_layout.addWidget(cal_section)
 
-        self._scroll_layout.addWidget(SectionHeader("项目"))
-        self._add_button(
-            self._scroll_layout,
+        # === Level 2: Collapsible "Projects" ===
+        proj_section = CollapsibleSection("项目")
+        btn = self._add_button(
+            proj_section.content_layout(),
             "项目板",
             Page.PROJECTS,
             PAGE_ICONS.get(Page.PROJECTS, ""),
         )
+        proj_section.add_button(btn)
+        self._scroll_layout.addWidget(proj_section)
 
         self._scroll_layout.addStretch()
-
         scroll.setWidget(scroll_content)
         layout.addWidget(scroll)
 
+        # Bottom: settings
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.HLine)
         separator.setFixedHeight(1)
@@ -249,22 +304,6 @@ class Sidebar(QWidget):
 
         if self._buttons:
             self._buttons[0].setChecked(True)
-
-    def _add_mail_buttons(self, layout: QVBoxLayout) -> None:
-        mail_items = [
-            ("收件箱", Page.MAIL_INBOX),
-            ("标签", Page.LABELS),
-            ("已发送", Page.MAIL_SENT),
-            ("草稿", Page.MAIL_DRAFTS),
-            ("垃圾邮件", Page.MAIL_SPAM),
-            ("已删除", Page.MAIL_TRASH),
-        ]
-        for text, page in mail_items:
-            icon = PAGE_ICONS.get(page, "")
-            btn = self._add_button(layout, text, page, icon)
-            folder_key = [k for k, v in FOLDER_PAGES.items() if v == page]
-            if folder_key:
-                self._folder_buttons[folder_key[0]] = btn
 
     def _add_button(
         self, layout: QVBoxLayout, text: str, page: Page, icon: str = ""
@@ -304,7 +343,7 @@ class Sidebar(QWidget):
                     status_display = get_status_display(account.connection_status)
                     label = QLabel(f"  ⚠ {account.email}（{status_display}）")
                     label.setStyleSheet(
-                        "font-size: 11px; padding: 2px 12px; color: #C97850;"
+                        "font-size: 11px; padding: 2px 12px;"
                     )
                     label.setToolTip(
                         f"账号状态: {status_display}\n需要用户操作修复该账号"
@@ -316,7 +355,7 @@ class Sidebar(QWidget):
                         f"  … 还有 {len(need_action) - 2} 个账号需要修复"
                     )
                     more_label.setStyleSheet(
-                        "font-size: 10px; padding: 2px 12px; color: #6C665F;"
+                        "font-size: 10px; padding: 2px 12px;"
                     )
                     self._account_layout.addWidget(more_label)
             else:
