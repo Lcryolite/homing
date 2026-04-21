@@ -4,7 +4,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from PyQt6.QtCore import QThread, pyqtSignal, QMutex
+from PyQt6.QtCore import QThread, pyqtSignal, QMutex, QObject
 
 logger = logging.getLogger(__name__)
 
@@ -297,15 +297,20 @@ class IdleWorker(QThread):
         self.wait(5000)
 
 
-class MailSyncManager:
+class MailSyncManager(QObject):
     _instance: MailSyncManager | None = None
+
+    # Proxy signals forwarded from SyncWorker
+    sync_finished = pyqtSignal(int, int)
+    sync_error = pyqtSignal(int, str)
 
     def __new__(cls) -> MailSyncManager:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self) -> None:
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
         if hasattr(self, "_initialized"):
             return
         self._initialized = True
@@ -317,6 +322,9 @@ class MailSyncManager:
         if self._sync_worker and self._sync_worker.isRunning():
             return
         self._sync_worker = SyncWorker()
+        # Forward worker signals to manager-level signals
+        self._sync_worker.sync_finished.connect(self.sync_finished)
+        self._sync_worker.sync_error.connect(self.sync_error)
         self._sync_worker.start()
 
     def stop_sync(self) -> None:
