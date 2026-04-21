@@ -362,3 +362,22 @@ MIGRATIONS: dict[int, list[str]] = {
         """CREATE INDEX IF NOT EXISTS idx_bayes_ham ON bayes_tokens(ham_count)""",
     ],
 }
+
+# --- Rollback statements ---
+# Rollback SQL for each version (reverses MIGRATIONS[version]).
+# Only populated for v8+ (earlier ALTER TABLE drops are not reliably supported in older SQLite).
+ROLLBACKS: dict[int, list[str]] = {
+    8: [
+        "DROP TABLE IF EXISTS drafts",
+    ],
+    9: [
+        "DROP TABLE IF EXISTS oauth_tokens",
+    ],
+    10: [
+        "DROP TABLE IF EXISTS email_thread_members",
+        "DROP TABLE IF EXISTS email_threads",
+    ],
+    11: [
+        "DROP TABLE IF EXISTS bayes_meta",
+    ],
+}
