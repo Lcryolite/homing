@@ -32,6 +32,8 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "smtp_port": 465,
         "ssl_mode": "ssl",
         "auth_type": "app_password",
+        "supported_auth_types": ["app_password"],
+        "status": "stable",
     },
     "gmail": {
         "name": "Gmail",
@@ -41,9 +43,11 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "smtp_host": "smtp.gmail.com",
         "smtp_port": 465,
         "ssl_mode": "ssl",
-        "auth_type": "app_password",  # 默认使用应用专用密码，更稳定
+        "auth_type": "app_password",
         "oauth_provider": "google",
         "folder_prefix": "[Gmail]/",
+        "supported_auth_types": ["app_password", "oauth2"],
+        "status": "stable",
     },
     "gmail_oauth": {
         "name": "Gmail (OAuth2)",
@@ -56,6 +60,8 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "auth_type": "oauth2",
         "oauth_provider": "google",
         "folder_prefix": "[Gmail]/",
+        "supported_auth_types": ["oauth2"],
+        "status": "stable",
     },
     "outlook": {
         "name": "Outlook (IMAP)",
@@ -67,14 +73,18 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "ssl_mode": "starttls",
         "auth_type": "oauth2",
         "oauth_provider": "microsoft",
+        "supported_auth_types": ["oauth2"],
+        "status": "stable",
     },
     "outlook_activesync": {
         "name": "Outlook/Exchange ActiveSync",
         "protocol": "activesync",
         "eas_host": "outlook.office365.com",
         "eas_path": "/Microsoft-Server-ActiveSync",
-        "auth_type": "basic",  # ActiveSync通常使用基本认证
+        "auth_type": "oauth2",
         "oauth_provider": "microsoft",
+        "supported_auth_types": ["oauth2"],
+        "status": "experimental",
     },
     "yahoo": {
         "name": "Yahoo",
@@ -85,6 +95,8 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "smtp_port": 465,
         "ssl_mode": "ssl",
         "auth_type": "app_password",
+        "supported_auth_types": ["app_password"],
+        "status": "stable",
     },
     "163": {
         "name": "163邮箱",
@@ -95,6 +107,8 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "smtp_port": 465,
         "ssl_mode": "ssl",
         "auth_type": "app_password",
+        "supported_auth_types": ["app_password"],
+        "status": "stable",
     },
     "126": {
         "name": "126邮箱",
@@ -105,7 +119,22 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "smtp_port": 465,
         "ssl_mode": "ssl",
         "auth_type": "app_password",
+        "supported_auth_types": ["app_password"],
+        "status": "stable",
     },
+}
+
+# Auth type display labels
+AUTH_TYPE_LABELS: dict[str, str] = {
+    "password": "密码/授权码",
+    "oauth2": "OAuth2",
+    "app_password": "应用专用密码",
+}
+
+# Provider status labels
+_PROVIDER_STATUS_LABELS: dict[str, str] = {
+    "stable": "",
+    "experimental": " (实验性)",
 }
 
 

@@ -69,12 +69,16 @@ class AccountDialog(QDialog):
         self._status_label.setStyleSheet("color: gray;")
         layout.addWidget(self._status_label)
 
+        from openemail.models.account import _PROVIDER_STATUS_LABELS
+
         provider_row = QHBoxLayout()
         provider_label = QLabel("服务商预设:")
         self._provider_combo = QComboBox()
         self._provider_combo.addItem("自定义", "custom")
         for key, preset in PROVIDER_PRESETS.items():
-            self._provider_combo.addItem(preset["name"], key)
+            status_suffix = _PROVIDER_STATUS_LABELS.get(preset.get("status", ""), "")
+            display_name = f"{preset['name']}{status_suffix}"
+            self._provider_combo.addItem(display_name, key)
         self._provider_combo.currentIndexChanged.connect(self._on_provider_changed)
         provider_row.addWidget(provider_label)
         provider_row.addWidget(self._provider_combo, 1)
@@ -150,11 +154,9 @@ class AccountDialog(QDialog):
         form.addRow("加密方式:", self._ssl_combo)
 
         self._auth_combo = QComboBox()
-        self._auth_combo.addItem("密码/授权码", "password")
-        self._auth_combo.addItem("OAuth2", "oauth2")
-        self._auth_combo.addItem("应用专用密码", "app_password")
         self._auth_combo.currentIndexChanged.connect(self._on_auth_type_changed)
         form.addRow("认证方式:", self._auth_combo)
+        self._populate_auth_combo()  # initial population with all types
 
         # OAuth状态和授权按钮
         oauth_group = QGroupBox("OAuth2 授权")
@@ -238,13 +240,32 @@ class AccountDialog(QDialog):
                 elif "ActiveSync" in text and not is_activesync:
                     widget.setVisible(False)
 
+    def _populate_auth_combo(self, supported_types: list[str] | None = None) -> None:
+        """Re-populate auth combo with only the given types (or all if None)."""
+        from openemail.models.account import AUTH_TYPE_LABELS
+
+        self._auth_combo.blockSignals(True)
+        self._auth_combo.clear()
+        types = supported_types or list(AUTH_TYPE_LABELS.keys())
+        for auth_type in types:
+            label = AUTH_TYPE_LABELS.get(auth_type, auth_type)
+            self._auth_combo.addItem(label, auth_type)
+        self._auth_combo.blockSignals(False)
+        if self._auth_combo.count() > 0:
+            self._on_auth_type_changed()
+
     def _on_provider_changed(self, index: int) -> None:
         provider = self._provider_combo.currentData()
         if provider == "custom":
+            self._populate_auth_combo()  # show all auth types
             return
 
         preset = PROVIDER_PRESETS.get(provider, {})
         self._name_edit.setText(preset.get("name", ""))
+
+        # 动态更新认证方式选项（仅显示 provider 支持的类型）
+        supported = preset.get("supported_auth_types")
+        self._populate_auth_combo(supported)
 
         # 协议选择
         protocol = preset.get("protocol", "imap")
@@ -267,10 +288,12 @@ class AccountDialog(QDialog):
         ssl_map = {"ssl": 0, "starttls": 1, "none": 2}
         self._ssl_combo.setCurrentIndex(ssl_map.get(preset.get("ssl_mode", "ssl"), 0))
 
-        auth_map = {"password": 0, "oauth2": 1, "app_password": 2}
-        self._auth_combo.setCurrentIndex(
-            auth_map.get(preset.get("auth_type", "password"), 0)
-        )
+        # Set auth type by data (not hardcoded index)
+        target_auth = preset.get("auth_type", "password")
+        for i in range(self._auth_combo.count()):
+            if self._auth_combo.itemData(i) == target_auth:
+                self._auth_combo.setCurrentIndex(i)
+                break
 
         # 更新OAuth状态
         self._update_oauth_status()
