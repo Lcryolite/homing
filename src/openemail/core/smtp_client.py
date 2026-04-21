@@ -14,6 +14,7 @@ except ImportError:
     aiosmtplib = None
     AIOSMTPLIB_AVAILABLE = False
 
+from openemail.core.auth import AuthError, ensure_auth  # noqa: E402
 from openemail.core.oauth2 import OAuth2Authenticator  # noqa: E402
 from openemail.models.account import Account  # noqa: E402
 
@@ -68,6 +69,12 @@ class SMTPClient:
 
         # Collect all recipients (to + cc + bcc) for SMTP envelope
         all_recipients = list(to) + list(cc or []) + list(bcc or [])
+
+        # Ensure credentials are valid before sending (refresh OAuth token, etc.)
+        try:
+            ensure_auth(self._account)
+        except AuthError:
+            raise
 
         try:
             use_tls = self._account.ssl_mode == "ssl"
