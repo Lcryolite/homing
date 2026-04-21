@@ -185,7 +185,7 @@ class Database:
         return cur.fetchall()
 
     def insert(self, table: str, data: dict) -> int:
-        columns = ", ".join(data.keys())
+        columns = ", ".join(f'"{k}"' for k in data.keys())
         placeholders = ", ".join("?" for _ in data)
         sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
         cur = self.execute(sql, tuple(data.values()))
@@ -201,7 +201,7 @@ class Database:
         for field in data.keys():
             self._validate_identifier(field)
 
-        set_clause = ", ".join(f"{k} = ?" for k in data)
+        set_clause = ", ".join(f'"{k}" = ?' for k in data)
         sql = f"UPDATE {table} SET {set_clause} WHERE {where}"
         cur = self.execute(sql, tuple(data.values()) + where_params)
         self.commit()
@@ -279,7 +279,7 @@ class Database:
         set_values = []
         for field, value in data.items():
             self._validate_identifier(field)
-            set_parts.append(f"{field} = ?")
+            set_parts.append(f'"{field}" = ?')
             set_values.append(value)
 
         # 构建WHERE子句
