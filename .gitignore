@@ -32,7 +32,8 @@ settings.json
 Thumbs.db
 
 # Debug/test scripts (not part of the project)
-test_*.py
+/test_*.py
+!tests/test_*.py
 debug_*.py
 fix_*.py
 *_launcher.py
