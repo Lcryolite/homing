@@ -83,6 +83,51 @@ def _styles_dir() -> Path:
     return Path(__file__).parent / "ui" / "resources" / "styles"
 
 
+def _recover_interrupted_queue() -> None:
+    """Reset 'processing' operations back to 'pending' after a crash.
+
+    Operations stuck in 'processing' were interrupted mid-execution and
+    must be re-queued.  'success' operations are never touched.
+    """
+    try:
+        from openemail.storage.database import db
+
+        cur = db.execute(
+            """
+            UPDATE offline_operations
+            SET status = 'pending', updated_at = datetime('now')
+            WHERE status IN ('processing', 'retrying')
+            """
+        )
+        reset_count = cur.rowcount
+        if reset_count > 0:
+            db.commit()
+            logger.info("崩溃恢复：已将 %d 个中断操作重置为 pending", reset_count)
+        else:
+            logger.debug("崩溃恢复：无中断的离线操作")
+    except Exception:
+        logger.exception("崩溃恢复：重置离线队列失败")
+
+
+def _show_crash_recovery_dialog() -> None:
+    """Show a non-blocking notification about the previous crash."""
+    try:
+        from PyQt6.QtWidgets import QMessageBox
+
+        box = QMessageBox()
+        box.setIcon(QMessageBox.Icon.Warning)
+        box.setWindowTitle("OpenEmail — 上次异常退出")
+        box.setText(
+            "检测到 OpenEmail 上次异常退出。\n\n"
+            "已自动恢复中断的离线队列操作。\n"
+            "详细诊断信息请查看 ~/.openemail/crash.log"
+        )
+        box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        box.exec()
+    except Exception:
+        logger.exception("显示崩溃恢复对话框失败")
+
+
 def _resolve_theme() -> str:
     theme = settings.theme
     if theme == "system":
@@ -116,7 +161,8 @@ def create_app() -> tuple[QApplication, "MainWindow"]:
     install_global_handler()
 
     # 检测上次是否异常退出
-    if detect_last_crash():
+    _crashed = detect_last_crash()
+    if _crashed:
         logger.warning(
             "检测到应用程序上次可能异常退出，详情请查看 ~/.openemail/crash.log"
         )
@@ -127,6 +173,10 @@ def create_app() -> tuple[QApplication, "MainWindow"]:
     _app.setDesktopFileName("openemail")
 
     db.connect()
+
+    # 崩溃恢复：重置中断的离线队列操作
+    if _crashed:
+        _recover_interrupted_queue()
 
     # 启动后台任务管理器（日历提醒等）
     from openemail.background.background_manager import background_task_manager
@@ -146,6 +196,10 @@ def create_app() -> tuple[QApplication, "MainWindow"]:
 
     # 清除崩溃标志
     clear_crash_flag()
+
+    # 显示崩溃恢复通知（非阻塞，在 main_window 创建之后）
+    if _crashed:
+        _show_crash_recovery_dialog()
 
     return _app, _main_window
 
