@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import threading
 import json
@@ -75,7 +74,10 @@ class EmbeddingService:
             return False
         try:
             from sentence_transformers import SentenceTransformer
-            import torch
+            import importlib.util
+
+            if importlib.util.find_spec("torch") is None:
+                return False
 
             if not self._model_loaded:
                 with self._load_model_lock:

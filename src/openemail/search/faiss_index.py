@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import pickle
-import sqlite3
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Any
 import os
@@ -13,7 +12,7 @@ except ImportError:
     np = None
 
 from openemail.storage.database import db
-from openemail.search.embedding_service import embedding_service, EmailEmbedding
+from openemail.search.embedding_service import embedding_service
 from openemail.models.email import Email
 
 logger = logging.getLogger(__name__)
@@ -57,10 +56,12 @@ class FaissIndexManager:
             return False
 
     def is_available(self) -> bool:
-        """检查 Faiss 是否可用"""
-        try:
-            import faiss
+        """Check if Faiss is available."""
+        import importlib.util
 
+        if importlib.util.find_spec("faiss") is None:
+            return False
+        try:
             if not hasattr(self, "_index") or self._index is None:
                 return self.initialize_index()
             return True
@@ -74,7 +75,6 @@ class FaissIndexManager:
             return False
 
         try:
-            import faiss
 
             # 清空缓存
             self._embeddings_cache.clear()
@@ -173,7 +173,6 @@ class FaissIndexManager:
             return False
 
         try:
-            import faiss
 
             # 确保维度正确
             if embedding.shape[0] != self._dimension:
@@ -218,7 +217,6 @@ class FaissIndexManager:
             return []
 
         try:
-            import faiss
 
             if exclude_email_ids is None:
                 exclude_email_ids = []

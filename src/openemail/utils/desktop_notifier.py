@@ -23,12 +23,10 @@ class DesktopNotifier:
         if self._available is None:
             self._available = shutil.which("notify-send") is not None
             if not self._available:
-                try:
-                    import dbus
+                import importlib.util
 
+                if importlib.util.find_spec("dbus") is not None:
                     self._available = True
-                except ImportError:
-                    pass
         return self._available
 
     def notify(
