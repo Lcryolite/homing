@@ -577,8 +577,53 @@ QFrame[class="kanban-column"] {
     max-width: 320px;
 }
 
+/* Sidebar specific */
+QFrame[class="sidebar"] QPushButton {
+    text-align: left;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    min-height: 36px;
+    background: transparent;
+    color: #E8E1D8;
+}
+
+QFrame[class="sidebar"] QPushButton:checked {
+    font-weight: bold;
+    background-color: #3A3735;
+}
+
+QFrame[class="sidebar"] QPushButton:hover:!checked {
+    background-color: rgba(58, 55, 53, 0.6);
+}
+
+QFrame[class="sidebar"] QPushButton[class="primary"] {
+    background-color: #C97850;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    min-height: 40px;
+    padding: 10px 16px;
+}
+
+QFrame[class="sidebar"] QPushButton[class="primary"]:hover {
+    background-color: #D4896A;
+}
+
+QFrame[class="sidebar"] QLabel[class="section-header"] {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 14px 12px 4px 12px;
+    letter-spacing: 1px;
+    color: #9A948C;
+}
+
+/* Priority labels */
 QLabel[class="priority-urgent"] {
-    color: #f38ba8;
+    color: #C97850;
     font-weight: bold;
 }
 

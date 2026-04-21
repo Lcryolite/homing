@@ -609,6 +609,50 @@ QTabBar::tab:hover:!selected {
     color: #141413;
 }
 
+/* Sidebar specific */
+QFrame[class="sidebar"] QPushButton {
+    text-align: left;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    min-height: 36px;
+    background: transparent;
+    color: #141413;
+}
+
+QFrame[class="sidebar"] QPushButton:checked {
+    font-weight: bold;
+    background-color: #E8E1D8;
+}
+
+QFrame[class="sidebar"] QPushButton:hover:!checked {
+    background-color: rgba(232, 225, 216, 0.5);
+}
+
+QFrame[class="sidebar"] QPushButton[class="primary"] {
+    background-color: #C97850;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    min-height: 40px;
+    padding: 10px 16px;
+}
+
+QFrame[class="sidebar"] QPushButton[class="primary"]:hover {
+    background-color: #D4896A;
+}
+
+QFrame[class="sidebar"] QLabel[class="section-header"] {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 14px 12px 4px 12px;
+    letter-spacing: 1px;
+    color: #6C665F;
+}
+
 /* Priority labels */
 QLabel[class="priority-urgent"] {
     color: #C97850;

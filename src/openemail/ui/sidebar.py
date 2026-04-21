@@ -79,18 +79,7 @@ class SidebarButton(QPushButton):
         self.setCheckable(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setMinimumHeight(38)
-        self.setStyleSheet("""
-            QPushButton {
-                text-align: left;
-                padding: 8px 12px;
-                border: none;
-                border-radius: 8px;
-                font-size: 13px;
-            }
-            QPushButton:checked {
-                font-weight: bold;
-            }
-        """)
+        # Style handled by QSS: QFrame[class="sidebar"] QPushButton
 
     def set_badge(self, count: int) -> None:
         self._badge_count = count
@@ -107,27 +96,14 @@ class ComposeButton(QPushButton):
         self.setProperty("class", "primary")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setMinimumHeight(40)
-        self.setStyleSheet("""
-            QPushButton {
-                padding: 10px 16px;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-        """)
+        # Style handled by QSS: QFrame[class="sidebar"] QPushButton[class="primary"]
 
 
 class SectionHeader(QLabel):
     def __init__(self, text: str) -> None:
         super().__init__(text)
-        self.setStyleSheet("""
-            QLabel {
-                font-size: 11px;
-                font-weight: bold;
-                padding: 14px 12px 4px 12px;
-                letter-spacing: 1px;
-            }
-        """)
+        self.setProperty("class", "section-header")
+        # Style handled by QSS: QFrame[class="sidebar"] QLabel[class="section-header"]
 
 
 class CollapsibleSection(QWidget):
@@ -146,16 +122,8 @@ class CollapsibleSection(QWidget):
         # Toggle header
         self._toggle_btn = QPushButton(f"  ▸  {title}")
         self._toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._toggle_btn.setStyleSheet("""
-            QPushButton {
-                text-align: left;
-                padding: 10px 12px 4px 12px;
-                border: none;
-                font-size: 11px;
-                font-weight: bold;
-                letter-spacing: 1px;
-            }
-        """)
+        self._toggle_btn.setProperty("class", "text")
+        # Style handled by QSS
         self._toggle_btn.clicked.connect(self._toggle)
         main_layout.addWidget(self._toggle_btn)
 
@@ -202,10 +170,9 @@ class Sidebar(QWidget):
 
         # App header
         app_label = QLabel("✉  OpenEmail")
+        app_label.setProperty("class", "heading")
         app_label.setStyleSheet("""
             QLabel {
-                font-size: 18px;
-                font-weight: bold;
                 padding: 4px 0 12px 0;
             }
         """)

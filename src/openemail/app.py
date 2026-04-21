@@ -138,6 +138,22 @@ def _resolve_theme() -> str:
     return theme
 
 
+def _strip_inline_styles(obj) -> None:
+    """Recursively clear inline stylesheets from all child widgets.
+
+    Widgets with property "keep_style"="true" are exempt — they have
+    genuinely custom styles that shouldn't be overridden by QSS.
+    """
+    from PyQt6.QtWidgets import QWidget
+
+    if isinstance(obj, QWidget):
+        if obj.property("keep_style") != "true":
+            obj.setStyleSheet("")
+    # Visit all children
+    for child in obj.children():
+        _strip_inline_styles(child)
+
+
 def apply_theme() -> None:
     if _app is None:
         return
@@ -146,6 +162,11 @@ def apply_theme() -> None:
     if qss_file.exists():
         stylesheet = qss_file.read_text(encoding="utf-8")
         _app.setStyleSheet(stylesheet)
+        # Strip inline stylesheets from all widgets so QSS takes full control.
+        # This prevents hardcoded light colors from leaking into dark mode
+        # (and vice versa). Widgets that truly need custom non-theme styles
+        # can set a property "keep_style"="true" to be exempt.
+        _strip_inline_styles(_app)
 
 
 def create_app() -> tuple[QApplication, "MainWindow"]:
