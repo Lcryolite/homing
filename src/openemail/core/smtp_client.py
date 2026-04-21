@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import smtplib
 import ssl
-from email.message import EmailMessage
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +14,8 @@ except ImportError:
     aiosmtplib = None
     AIOSMTPLIB_AVAILABLE = False
 
-from openemail.core.oauth2 import OAuth2Authenticator
-from openemail.models.account import Account
+from openemail.core.oauth2 import OAuth2Authenticator  # noqa: E402
+from openemail.models.account import Account  # noqa: E402
 
 
 class SMTPClient:

@@ -3,19 +3,18 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any
 
 from PyQt6.QtCore import QThread, pyqtSignal, QMutex
 
 logger = logging.getLogger(__name__)
 
-from openemail.config import settings
-from openemail.core.imap_client import IMAPClient
-from openemail.core.pop3_client import POP3Client
-from openemail.core.activesync_client import ActiveSyncClient, MockActiveSyncClient
-from openemail.models.account import Account
-from openemail.models.email import Email
-from openemail.models.folder import Folder
+from openemail.config import settings  # noqa: E402
+from openemail.core.imap_client import IMAPClient  # noqa: E402
+from openemail.core.pop3_client import POP3Client  # noqa: E402
+from openemail.core.activesync_client import MockActiveSyncClient  # noqa: E402
+from openemail.models.account import Account  # noqa: E402
+from openemail.models.email import Email  # noqa: E402
+from openemail.models.folder import Folder  # noqa: E402
 
 
 class SyncWorker(QThread):
@@ -278,7 +277,7 @@ class IdleWorker(QThread):
                     self.new_mail_notification.emit(
                         self._account_id, account.email, "Poll check"
                     )
-                except Exception as e:
+                except Exception:
                     if not self._running:
                         break
                     raise
