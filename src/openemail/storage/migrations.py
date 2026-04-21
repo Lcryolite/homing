@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -361,6 +361,11 @@ MIGRATIONS: dict[int, list[str]] = {
         """CREATE INDEX IF NOT EXISTS idx_bayes_spam ON bayes_tokens(spam_count)""",
         """CREATE INDEX IF NOT EXISTS idx_bayes_ham ON bayes_tokens(ham_count)""",
     ],
+    12: [
+        # Sync state tracking for folders (T1.4)
+        """ALTER TABLE folders ADD COLUMN uid_validity TEXT DEFAULT ''""",
+        """ALTER TABLE folders ADD COLUMN last_uid TEXT DEFAULT ''""",
+    ],
 }
 
 # --- Rollback statements ---
@@ -379,5 +384,20 @@ ROLLBACKS: dict[int, list[str]] = {
     ],
     11: [
         "DROP TABLE IF EXISTS bayes_meta",
+    ],
+    12: [
+        # Recreate folders table without uid_validity / last_uid (SQLite <3.35 workaround)
+        """CREATE TABLE IF NOT EXISTS _folders_old (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            path TEXT NOT NULL,
+            unread_count INTEGER DEFAULT 0,
+            is_system INTEGER DEFAULT 0,
+            special_use TEXT DEFAULT ''
+        )""",
+        "INSERT INTO _folders_old SELECT id,account_id,name,path,unread_count,is_system,special_use FROM folders",
+        "DROP TABLE folders",
+        "ALTER TABLE _folders_old RENAME TO folders",
     ],
 }

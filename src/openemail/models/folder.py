@@ -55,6 +55,8 @@ class Folder:
     unread_count: int = 0
     is_system: bool = False
     special_use: str = ""
+    uid_validity: str = ""
+    last_uid: str = ""
 
     def save(self) -> int:
         data = {
@@ -64,6 +66,8 @@ class Folder:
             "unread_count": self.unread_count,
             "is_system": int(self.is_system),
             "special_use": self.special_use,
+            "uid_validity": self.uid_validity,
+            "last_uid": self.last_uid,
         }
         if self.id == 0:
             self.id = db.insert("folders", data)
