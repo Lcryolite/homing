@@ -113,7 +113,9 @@ def create_app() -> tuple[QApplication, "MainWindow"]:
 
     # 检测上次是否异常退出
     if detect_last_crash():
-        logger.warning("检测到应用程序上次可能异常退出，详情请查看 ~/.openemail/crash.log")
+        logger.warning(
+            "检测到应用程序上次可能异常退出，详情请查看 ~/.openemail/crash.log"
+        )
 
     _app = QApplication(sys.argv)
     _app.setApplicationName("OpenEmail")

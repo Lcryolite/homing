@@ -443,25 +443,25 @@ class EnhancedSearchEngine:
         remaining = query
 
         # All filter keyword prefixes for lookahead
-        _KW = r'(?:from|to|subject|has|is|after|before|in):'
+        _KW = r"(?:from|to|subject|has|is|after|before|in):"
         _quoted = r'"[^"]*"|\'[^\']*\''
-        _word = r'\S+'
+        _word = r"\S+"
 
         # 1) Text filters: capture until next keyword or end (respecting quotes)
         for key, fkey in [("from", "from"), ("to", "to"), ("subject", "subject")]:
-            pattern = rf'{key}:({_quoted}|.+?)(?=\s*(?:{_KW})|$)'
+            pattern = rf"{key}:({_quoted}|.+?)(?=\s*(?:{_KW})|$)"
             for m in re.finditer(pattern, remaining, re.IGNORECASE):
-                val = m.group(1).strip().strip('"\'')
+                val = m.group(1).strip().strip("\"'")
                 if val:
                     filters[fkey] = val
 
         # 2) has:attachment
-        for m in re.finditer(rf'has:({_word})', remaining, re.IGNORECASE):
+        for m in re.finditer(rf"has:({_word})", remaining, re.IGNORECASE):
             if m.group(1).lower() in ("attachment", "attachments"):
                 filters["has_attachment"] = True
 
         # 3) is:read/unread/flagged/spam
-        for m in re.finditer(rf'is:({_word})', remaining, re.IGNORECASE):
+        for m in re.finditer(rf"is:({_word})", remaining, re.IGNORECASE):
             val = m.group(1).lower()
             if val in ("read", "unread"):
                 filters["is_read"] = val == "read"
@@ -471,19 +471,26 @@ class EnhancedSearchEngine:
                 filters["is_spam"] = True
 
         # 4) after:/before: date filters
-        for m in re.finditer(r'after:(\d{4}-\d{2}-\d{2})', remaining, re.IGNORECASE):
+        for m in re.finditer(r"after:(\d{4}-\d{2}-\d{2})", remaining, re.IGNORECASE):
             filters["after_date"] = m.group(1)
-        for m in re.finditer(r'before:(\d{4}-\d{2}-\d{2})', remaining, re.IGNORECASE):
+        for m in re.finditer(r"before:(\d{4}-\d{2}-\d{2})", remaining, re.IGNORECASE):
             filters["before_date"] = m.group(1)
 
         # 5) in:folder
-        for m in re.finditer(rf'in:({_word})', remaining, re.IGNORECASE):
+        for m in re.finditer(rf"in:({_word})", remaining, re.IGNORECASE):
             filters["folder"] = m.group(1)
 
         # Strip all filter expressions from remaining query
-        remaining = re.sub(rf'(?:from|to|subject):(?:{_quoted}|.+?)(?=\s*(?:{_KW})|$)', '', remaining, flags=re.IGNORECASE)
-        remaining = re.sub(r'(?:has|is|in):\S+', '', remaining, flags=re.IGNORECASE)
-        remaining = re.sub(r'(?:after|before):\d{4}-\d{2}-\d{2}', '', remaining, flags=re.IGNORECASE)
+        remaining = re.sub(
+            rf"(?:from|to|subject):(?:{_quoted}|.+?)(?=\s*(?:{_KW})|$)",
+            "",
+            remaining,
+            flags=re.IGNORECASE,
+        )
+        remaining = re.sub(r"(?:has|is|in):\S+", "", remaining, flags=re.IGNORECASE)
+        remaining = re.sub(
+            r"(?:after|before):\d{4}-\d{2}-\d{2}", "", remaining, flags=re.IGNORECASE
+        )
         remaining = remaining.strip()
 
         # Remaining = search terms
@@ -491,7 +498,7 @@ class EnhancedSearchEngine:
         if remaining:
             terms = re.findall(r'[^\s"\']+|"[^"]+"|\'[^\']+\'', remaining)
             for term in terms:
-                term_clean = term.strip('"\'' )
+                term_clean = term.strip("\"'")
                 if len(term_clean) > 1:
                     search_terms.append(term_clean)
 

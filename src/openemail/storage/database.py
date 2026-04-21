@@ -72,7 +72,9 @@ class Database:
             try:
                 self._conn.close()
                 shutil.copy2(str(self._db_path), backup_path)
-                self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+                self._conn = sqlite3.connect(
+                    str(self._db_path), check_same_thread=False
+                )
                 self._conn.execute("PRAGMA journal_mode=WAL")
                 self._conn.execute("PRAGMA foreign_keys=ON")
                 self._conn.row_factory = sqlite3.Row
@@ -99,7 +101,9 @@ class Database:
                 logger.warning("迁移 v%d 失败，正在恢复备份...", version)
                 self._conn.close()
                 shutil.copy2(backup_path, str(self._db_path))
-                self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+                self._conn = sqlite3.connect(
+                    str(self._db_path), check_same_thread=False
+                )
                 self._conn.execute("PRAGMA journal_mode=WAL")
                 self._conn.execute("PRAGMA foreign_keys=ON")
                 self._conn.row_factory = sqlite3.Row
@@ -113,6 +117,7 @@ class Database:
             # 迁移成功后删除备份
             try:
                 import os
+
                 os.unlink(backup_path)
             except OSError:
                 pass

@@ -36,15 +36,27 @@ class TestMigrationBackupRestore:
     def test_all_tables_exist(self, isolated_db):
         """Core tables should exist after full migration."""
         expected_tables = {
-            "accounts", "folders", "emails", "filter_rules", "bayes_tokens",
-            "contacts", "calendar_events", "todos", "projects",
-            "project_columns", "project_cards", "tags", "email_tags",
-            "operation_queue", "drafts", "oauth_tokens",
-            "email_threads", "email_thread_members", "bayes_meta",
+            "accounts",
+            "folders",
+            "emails",
+            "filter_rules",
+            "bayes_tokens",
+            "contacts",
+            "calendar_events",
+            "todos",
+            "projects",
+            "project_columns",
+            "project_cards",
+            "tags",
+            "email_tags",
+            "operation_queue",
+            "drafts",
+            "oauth_tokens",
+            "email_threads",
+            "email_thread_members",
+            "bayes_meta",
         }
-        rows = isolated_db.fetchall(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        )
+        rows = isolated_db.fetchall("SELECT name FROM sqlite_master WHERE type='table'")
         actual = {r["name"] for r in rows}
         missing = expected_tables - actual - {"schema_version", "sqlite_sequence"}
         assert not missing, f"Missing tables: {missing}"
@@ -67,6 +79,7 @@ class TestMigrationFailureRestore:
 
         # Inject a bad migration at v8 (overwrite temporarily)
         import openemail.storage.migrations as mig
+
         original_v8 = mig.MIGRATIONS.get(8, [])
         mig.MIGRATIONS[8] = ["THIS IS NOT VALID SQL"]
 

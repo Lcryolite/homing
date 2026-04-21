@@ -123,7 +123,12 @@ class SMTPClient:
         server.quit()
 
     async def _send_with_xoauth2(
-        self, message_str: str, recipients: list[str], use_tls: bool, start_tls: bool, auth_string: str
+        self,
+        message_str: str,
+        recipients: list[str],
+        use_tls: bool,
+        start_tls: bool,
+        auth_string: str,
     ) -> None:
         if AIOSMTPLIB_AVAILABLE:
             smtp = aiosmtplib.SMTP(

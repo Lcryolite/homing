@@ -247,6 +247,7 @@ class ActiveSyncClient:
         if self.session and not self.session.closed:
             try:
                 import warnings
+
                 warnings.warn(
                     f"ActiveSyncClient for {self.account.email} was not properly disconnected. "
                     "Call disconnect() explicitly.",

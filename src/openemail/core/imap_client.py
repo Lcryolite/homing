@@ -196,7 +196,9 @@ class IMAPClient:
             return True
         except Exception as e:
             error_msg = str(e)
-            logger.error("IMAP connect error for %s: %s", self._account.email, error_msg)
+            logger.error(
+                "IMAP connect error for %s: %s", self._account.email, error_msg
+            )
 
             # 提供更好的错误提示
             if (

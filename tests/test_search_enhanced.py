@@ -258,6 +258,7 @@ class TestEnhancedSearchEngine:
         """测试缺少依赖时的语义搜索"""
         # 当 sentence_transformers 未安装时，_semantic_search 应返回空列表
         from openemail.storage.search_enhanced import EnhancedSearchEngine
+
         results = EnhancedSearchEngine._semantic_search(
             search_terms=["test"], account_id=1, folder_id=None, limit=10
         )

@@ -33,6 +33,7 @@ class NetworkMonitor(QObject):
         try:
             # 通过解析公共域名检测网络，不建立实际连接
             import socket
+
             socket.setdefaulttimeout(5)
             socket.getaddrinfo("dns.google", 443)
             new_state = True

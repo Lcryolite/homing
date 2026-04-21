@@ -312,7 +312,6 @@ class MailPageWidget(QWidget):
             if not folder_obj:
                 return
 
-
             for email_id in email_ids:
                 email_obj = Email.get_by_id(email_id)
                 if email_obj:
@@ -383,7 +382,6 @@ class MailPageWidget(QWidget):
         spam_folder = None
         if self._current_account:
             spam_folder = Folder.get_by_name(self._current_account.id, "Spam")
-
 
         for email_id in email_ids:
             email_obj = Email.get_by_id(email_id)

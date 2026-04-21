@@ -164,9 +164,7 @@ class ConnectionManager:
     async def _evict_expired(self) -> None:
         async with self._lock:
             for cache in (self._imap_cache, self._smtp_cache):
-                expired_ids = [
-                    aid for aid, c in cache.items() if c.is_expired()
-                ]
+                expired_ids = [aid for aid, c in cache.items() if c.is_expired()]
                 for aid in expired_ids:
                     cached = cache.pop(aid)
                     try:

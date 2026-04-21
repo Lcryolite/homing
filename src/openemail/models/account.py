@@ -608,7 +608,6 @@ class Account:
         if not self.is_oauth_enabled():
             return False
 
-
         oauth_mgr = OAuthManager()
         return oauth_mgr.is_provider_available(self.oauth_provider)
 
@@ -616,7 +615,6 @@ class Account:
         """获取OAuth认证器实例"""
         if not self.is_oauth_enabled():
             return None
-
 
         oauth_mgr = OAuthManager()
         return oauth_mgr.get_authenticator(self.oauth_provider)

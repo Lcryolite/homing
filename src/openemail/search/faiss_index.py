@@ -75,7 +75,6 @@ class FaissIndexManager:
             return False
 
         try:
-
             # 清空缓存
             self._embeddings_cache.clear()
 
@@ -173,7 +172,6 @@ class FaissIndexManager:
             return False
 
         try:
-
             # 确保维度正确
             if embedding.shape[0] != self._dimension:
                 logger.error(
@@ -217,7 +215,6 @@ class FaissIndexManager:
             return []
 
         try:
-
             if exclude_email_ids is None:
                 exclude_email_ids = []
 
