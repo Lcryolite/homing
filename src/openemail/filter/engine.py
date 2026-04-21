@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from openemail.models.email import Email
-from openemail.models.filter_rule import FilterAction, FilterRule
+from openemail.models.filter_rule import FilterRule
 from openemail.models.folder import Folder
 from openemail.models.tag import Tag
 from openemail.storage.database import db

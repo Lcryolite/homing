@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_all_modules_importable():

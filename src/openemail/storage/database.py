@@ -1,8 +1,7 @@
 import logging
 import re
 import sqlite3
-from pathlib import Path
-from typing import Any, Union, List, Dict, Tuple
+from typing import Any, Dict
 
 from openemail.config import settings
 from openemail.storage.migrations import SCHEMA_VERSION, MIGRATIONS

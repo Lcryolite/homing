@@ -10,7 +10,6 @@ import logging
 from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QDialog,
@@ -32,7 +31,6 @@ from openemail.core.connection_status import (
     get_status_icon,
 )
 from openemail.ui.mail.account_dialog import AccountDialog
-from openemail.core.connection_tester import get_connection_tester, ProtocolType
 
 logger = logging.getLogger(__name__)
 

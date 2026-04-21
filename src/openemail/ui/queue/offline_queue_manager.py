@@ -1,20 +1,13 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from typing import Optional
 import logging
-from enum import Enum
 
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSortFilterProxyModel, QModelIndex
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import (
-    QFont,
     QColor,
     QBrush,
-    QIcon,
-    QTextCharFormat,
-    QSyntaxHighlighter,
-    QAction,
 )
 from PyQt6.QtWidgets import (
     QWidget,
@@ -24,10 +17,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
-    QHeaderView,
     QComboBox,
-    QSpinBox,
-    QDateEdit,
     QGroupBox,
     QFormLayout,
     QSplitter,
@@ -36,20 +26,13 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox,
     QMessageBox,
     QTabWidget,
-    QTreeWidget,
-    QTreeWidgetItem,
     QMenu,
-    QApplication,
-    QProgressBar,
-    QCheckBox,
     QFrame,
-    QStackedWidget,
 )
 
 from openemail.queue.offline_queue import (
     get_offline_queue,
     OfflineOperation,
-    OfflineQueueStats,
     OperationType,
     OperationStatus,
     PriorityLevel,

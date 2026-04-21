@@ -5,7 +5,6 @@ import sqlite3
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Tuple
-import json
 
 from openemail.models.email import Email
 from openemail.storage.database import db

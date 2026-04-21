@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from email.message import Message
-from typing import Optional
 
 from openemail.core.imap_client import IMAPClient
 from openemail.models.account import Account

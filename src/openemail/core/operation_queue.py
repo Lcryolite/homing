@@ -5,7 +5,6 @@ import threading
 from dataclasses import dataclass
 from enum import Enum
 
-from openemail.core.imap_client import IMAPClient
 from openemail.models.account import Account
 from openemail.storage.database import db
 

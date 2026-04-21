@@ -2,18 +2,14 @@ from __future__ import annotations
 
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 
 from openemail.queue.offline_queue import (
     get_offline_queue,
     OfflineOperation,
     OperationType,
-    OperationStatus,
     PriorityLevel,
 )
-from openemail.models.email import Email
 from openemail.models.folder import Folder
-from openemail.models.account import Account
 
 
 class EmailOperationsManager:

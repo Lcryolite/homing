@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Dict, Any, Set
+from typing import List, Optional, Dict, Any
 import sqlite3
 
 from openemail.storage.database import db

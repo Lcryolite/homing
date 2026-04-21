@@ -1,9 +1,6 @@
-import pytest
 from openemail.models.folder import (
     Folder,
     SYSTEM_FOLDERS,
-    RFC6154_SPECIAL_USE_MAP,
-    FALLBACK_NAME_MAP,
 )
 
 
@@ -31,7 +28,7 @@ class TestFolderSpecialUse:
         assert Folder._resolve_special_use("Work", ["\\All"]) is None
 
     def test_discover_system_folders_dedup(self):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
 
         remote = [
             {"name": "INBOX", "path": "INBOX", "flags": ["\\Inbox"]},

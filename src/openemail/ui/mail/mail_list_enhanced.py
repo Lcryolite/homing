@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import List, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
-from PyQt6.QtGui import QAction, QFont, QIcon, QKeySequence, QPixmap
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtGui import QAction, QKeySequence
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -13,11 +12,8 @@ from PyQt6.QtWidgets import (
     QLabel,
     QFrame,
     QMenu,
-    QAbstractItemView,
-    QListView,
     QListWidget,
     QListWidgetItem,
-    QPushButton,
     QToolBar,
     QToolButton,
     QProgressBar,
@@ -26,7 +22,6 @@ from PyQt6.QtWidgets import (
 )
 
 from openemail.models.email import Email
-from openemail.models.folder import Folder
 
 logger = logging.getLogger(__name__)
 
@@ -979,7 +974,7 @@ class EnhancedMailListWidget(QWidget):
                 )
                 label_menu.addAction(label_action)
 
-        except ImportError as e:
+        except ImportError:
             # 标签模块不可用
             no_labels_action = QAction("标签功能未启用", self)
             no_labels_action.setEnabled(False)

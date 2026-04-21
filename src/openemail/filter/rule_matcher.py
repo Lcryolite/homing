@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from openemail.models.email import Email
-from openemail.models.filter_rule import FilterAction, FilterRule, MatchField, RuleType
+from openemail.models.filter_rule import FilterRule, MatchField, RuleType
 
 
 class RuleMatcher:

@@ -10,7 +10,6 @@ from enum import Enum
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict, Any, Callable, Union
 import logging
-from contextlib import contextmanager
 
 from openemail.storage.database import db
 

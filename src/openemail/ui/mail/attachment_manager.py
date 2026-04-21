@@ -4,7 +4,7 @@ import os
 import mimetypes
 from typing import List, Optional, Tuple
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QMimeData, QUrl
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -21,10 +21,8 @@ from PyQt6.QtGui import (
     QFont,
     QDragEnterEvent,
     QDropEvent,
-    QDragMoveEvent,
     QContextMenuEvent,
     QIcon,
-    QPixmap,
 )
 
 

@@ -1,35 +1,20 @@
 from __future__ import annotations
 
-import re
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any
 
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize, QSortFilterProxyModel
-from PyQt6.QtGui import (
-    QFont,
-    QTextCharFormat,
-    QBrush,
-    QColor,
-    QPainter,
-    QPen,
-)
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtWidgets import (
     QWidget,
     QLineEdit,
     QPushButton,
     QHBoxLayout,
     QVBoxLayout,
-    QComboBox,
     QLabel,
     QTreeWidget,
     QTreeWidgetItem,
     QMenu,
     QApplication,
-    QSizePolicy,
     QFrame,
-    QStyleOption,
-    QStyle,
-    QListView,
 )
 
 from openemail.storage.search_enhanced import EnhancedSearchEngine

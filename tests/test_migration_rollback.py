@@ -1,9 +1,6 @@
 """Tests for database migration rollback and crash recovery."""
 
-import os
-import shutil
 import sqlite3
-import tempfile
 
 import pytest
 

@@ -1,9 +1,7 @@
 """增强版搜索系统测试"""
 
 import pytest
-from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
-import sqlite3
 
 from openemail.storage.search_enhanced import EnhancedSearchEngine
 from openemail.models.email import Email

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any
 from datetime import datetime
 
 from PyQt6.QtCore import Qt, QTimer
@@ -23,7 +22,6 @@ from openemail.models.account import Account
 from openemail.core.account_cleanup import (
     run_account_cleanup,
     validate_account_statuses,
-    fix_inconsistent_accounts,
     check_email_risk,
 )
 from openemail.core.connection_status import ConnectionStatus

@@ -1,4 +1,3 @@
-import pytest
 from openemail.core.connection_status import (
     ConnectionStatus,
     AccountValidationResult,

@@ -21,8 +21,6 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QMessageBox,
     QColorDialog,
-    QSizePolicy,
-    QApplication,
 )
 
 from openemail.models.project import Project, ProjectColumn, ProjectCard

@@ -7,7 +7,6 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QPushButton,
     QScrollArea,
@@ -18,7 +17,6 @@ from PyQt6.QtWidgets import (
 )
 
 from openemail.models.account import Account
-from openemail.storage.database import db
 
 
 CALDAV_PROVIDERS = {

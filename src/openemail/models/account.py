@@ -10,16 +10,12 @@ from openemail.utils.crypto import decrypt_password, encrypt_password
 from openemail.core.connection_status import (
     ConnectionStatus,
     AccountValidationResult,
-    get_next_status,
     can_transition,
     should_sync,
     is_savable,
     get_status_display,
 )
 from openemail.core.oauth2_new import (
-    OAuthAuthenticator,
-    OAuthErrorCode,
-    OAuthError,
     OAuthManager,
 )
 
@@ -436,7 +432,6 @@ class Account:
     @classmethod
     def get_default_for_display(cls) -> Account | None:
         """获取默认显示账号（主界面当前邮箱）"""
-        from openemail.core.connection_status import ConnectionStatus
 
         # 首先尝试默认且可用的账号
         rows = db.fetchall("""
@@ -613,7 +608,6 @@ class Account:
         if not self.is_oauth_enabled():
             return False
 
-        from openemail.core.oauth2_new import OAuthManager
 
         oauth_mgr = OAuthManager()
         return oauth_mgr.is_provider_available(self.oauth_provider)
@@ -623,7 +617,6 @@ class Account:
         if not self.is_oauth_enabled():
             return None
 
-        from openemail.core.oauth2_new import OAuthManager
 
         oauth_mgr = OAuthManager()
         return oauth_mgr.get_authenticator(self.oauth_provider)

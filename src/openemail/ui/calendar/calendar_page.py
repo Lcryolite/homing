@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QDate, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QDate
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -21,10 +21,9 @@ from PyQt6.QtWidgets import (
     QFrame,
     QMessageBox,
     QTimeEdit,
-    QSizePolicy,
     QSpinBox,
 )
-from PyQt6.QtGui import QPainter, QColor, QFont, QPen, QTextCharFormat
+from PyQt6.QtGui import QPainter, QColor
 
 from openemail.models.calendar_event import CalendarEvent
 

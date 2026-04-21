@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QFrame,
     QPushButton,
-    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
@@ -18,7 +17,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QGroupBox,
 )
-from PyQt6.QtGui import QFont, QPixmap, QIcon
+from PyQt6.QtGui import QFont
 
 from openemail.models.contact import Contact
 

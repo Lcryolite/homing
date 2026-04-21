@@ -7,11 +7,10 @@
 
 import logging
 import re
-from typing import List, Optional
+from typing import List
 
 from openemail.models.account import Account
 from openemail.core.connection_status import ConnectionStatus
-from openemail.storage.database import db
 
 logger = logging.getLogger(__name__)
 
@@ -303,7 +302,6 @@ def run_account_cleanup() -> None:
 
 
 if __name__ == "__main__":
-    import sys
 
     logging.basicConfig(
         level=logging.INFO,

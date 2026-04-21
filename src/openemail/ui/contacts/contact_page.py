@@ -6,10 +6,8 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
-    QHBoxLayout,
     QSplitter,
     QLabel,
-    QMessageBox,
 )
 
 from openemail.models.contact import Contact
