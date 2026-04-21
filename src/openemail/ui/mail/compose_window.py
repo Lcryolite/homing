@@ -35,12 +35,6 @@ from openemail.utils.i18n import get_string
 logger = logging.getLogger(__name__)
 
 
-class ComposeWindowEnhanced(QDialog):
-    """增强版撰写窗口，支持附件管理"""
-
-    sent = pyqtSignal()
-
-
 class ComposeWindow(QDialog):
     """原撰写窗口，保持向后兼容"""
 
@@ -788,3 +782,10 @@ class ComposeWindow(QDialog):
         }
 
         return mime_map.get(ext, "application/octet-stream")
+
+
+class ComposeWindowEnhanced(ComposeWindow):
+    """增强版撰写窗口，支持附件管理"""
+
+    def __init__(self, account: Account, parent: QWidget | None = None) -> None:
+        super().__init__(account, parent)

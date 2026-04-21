@@ -37,10 +37,10 @@ CATPPUCCIN_BORDER = "#E8E1D8"
 
 EVENT_COLORS = [
     "#7C8A9A",
-    "#a6e3a1",
+    "#7D9174",
     "#C97850",
     "#C97850",
-    "#cba6f7",
+    "#C97850",
     "#fab387",
     "#94e2d5",
     "#f5c2e7",

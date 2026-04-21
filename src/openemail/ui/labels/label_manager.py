@@ -83,11 +83,11 @@ class LabelColorWidget(QPushButton):
             "#74c7ec",
             "#89dceb",
             "#94e2d5",  # 蓝色系
-            "#a6e3a1",
+            "#7D9174",
             "#C97850",
             "#fab387",
             "#C97850",  # 绿色/黄色/橙色/粉色
-            "#cba6f7",
+            "#C97850",
             "#f2cdcd",
             "#f5c2e7",
             "#bac2de",  # 紫色/红色/粉色/灰色
