@@ -1,6 +1,7 @@
 import logging
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QGuiApplication
@@ -13,6 +14,9 @@ from openemail.utils.exceptions import (
     detect_last_crash,
     clear_crash_flag,
 )
+
+if TYPE_CHECKING:
+    from openemail.ui.main_window import MainWindow
 
 logger = logging.getLogger(__name__)
 
