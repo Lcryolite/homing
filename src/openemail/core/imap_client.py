@@ -98,6 +98,12 @@ except ImportError:
                 return self._conn.noop()
             return ("OK", [b"Noop"])
 
+        async def uid(self, command, *args):
+            """Proxy to imaplib's uid() method."""
+            if not self._conn:
+                return ("NO", [b"Not connected"])
+            return self._conn.uid(command, *args)
+
     AioImap = _SyncImapWrapper
 
     # 创建兼容的模块对象
@@ -271,13 +277,21 @@ class IMAPClient:
 
         actual_name = await self._resolve_folder_name(folder_name)
         await self._client.select(actual_name)
-        _, data = await self._client.search("ALL")
+
+        # Use UID SEARCH so we compare UIDs with UIDs, not sequence numbers
+        _, data = await self._client.uid("search", None, "ALL")
         if not data or not data[0]:
             return 0
 
-        uids = data[0].split()
-        if isinstance(uids[0], bytes):
-            uids = [u.decode() for u in uids]
+        uid_bytes = data[0]
+        if isinstance(uid_bytes, bytes):
+            all_uids = uid_bytes.split()
+        else:
+            all_uids = []
+        if not all_uids:
+            return 0
+
+        uid_strings = [u.decode() if isinstance(u, bytes) else str(u) for u in all_uids]
 
         existing_uids = {
             r["uid"]
@@ -287,21 +301,27 @@ class IMAPClient:
             )
         }
 
-        new_uids = [u for u in uids if u not in existing_uids]
+        new_uids = [u for u in uid_strings if u not in existing_uids]
         if len(new_uids) > limit:
             new_uids = new_uids[-limit:]
         synced = 0
 
         for uid in new_uids:
-            _, msg_data = await self._client.fetch(uid, "(RFC822)")
-            if not msg_data:
+            _, msg_data = await self._client.uid("fetch", uid, "(RFC822)")
+            if not msg_data or not msg_data[0]:
                 continue
 
             raw = None
-            for item in msg_data:
-                if isinstance(item, tuple) and len(item) >= 2:
-                    raw = item[1]
-                    break
+            if isinstance(msg_data[0], tuple):
+                # (b'1 (RFC822 {1234}', b'<raw bytes>')
+                if len(msg_data[0]) >= 2:
+                    raw = msg_data[0][1]
+            if raw is None:
+                # Some servers return raw bytes as a separate list element
+                for part in msg_data:
+                    if isinstance(part, bytes) and len(part) > 100:
+                        raw = part
+                        break
             if raw is None:
                 continue
 
