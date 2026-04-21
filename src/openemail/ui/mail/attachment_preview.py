@@ -2,24 +2,24 @@ from __future__ import annotations
 
 import os
 import mimetypes
-import tempfile
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
+    QProgressBar,
     QPushButton,
     QFrame,
-    QTextEdit,
     QScrollArea,
     QSizePolicy,
-    QProgressBar,
-    QMessageBox,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtGui import QFont, QPixmap, QImage, QImageReader, QIcon, QTextDocument
+from PyQt6.QtGui import QFont, QPixmap, QImage
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 
 
@@ -398,7 +398,7 @@ class AttachmentPreviewDialog(QDialog):
 
                 shutil.copy2(self.file_path, save_path)
                 QMessageBox.information(self, "成功", f"文件已保存到:\n{save_path}")
-                self.status_label.setText(f"文件已保存")
+                self.status_label.setText("文件已保存")
             except Exception as e:
                 QMessageBox.critical(self, "错误", f"无法保存文件: {str(e)}")
 

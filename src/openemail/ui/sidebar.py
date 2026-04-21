@@ -3,7 +3,6 @@ from __future__ import annotations
 from enum import IntEnum
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -15,7 +14,8 @@ from PyQt6.QtWidgets import (
 )
 
 from openemail.models.account import Account
-from openemail.models.folder import Folder, SYSTEM_FOLDERS
+from openemail.models.email import Email
+from openemail.models.folder import Folder
 
 
 class Page(IntEnum):

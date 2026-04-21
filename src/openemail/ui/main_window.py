@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
 from openemail.config import settings
 from openemail.models.account import Account
 from openemail.models.email import Email
-from openemail.models.folder import Folder, SYSTEM_FOLDERS
+from openemail.models.folder import Folder
 from openemail.ui.sidebar import Page, Sidebar
 from openemail.ui.keyboard_shortcuts import (
     KeyboardShortcutManager,
@@ -228,7 +228,6 @@ class MailPageWidget(QWidget):
     # 批量操作方法
     def _on_batch_mark_read(self, email_ids: List[int]) -> None:
         """批量标记为已读"""
-        from openemail.storage.database import db
 
         for email_id in email_ids:
             email_obj = Email.get_by_id(email_id)
@@ -313,7 +312,6 @@ class MailPageWidget(QWidget):
             if not folder_obj:
                 return
 
-            from openemail.storage.database import db
 
             for email_id in email_ids:
                 email_obj = Email.get_by_id(email_id)
@@ -386,7 +384,6 @@ class MailPageWidget(QWidget):
         if self._current_account:
             spam_folder = Folder.get_by_name(self._current_account.id, "Spam")
 
-        from openemail.storage.database import db
 
         for email_id in email_ids:
             email_obj = Email.get_by_id(email_id)
@@ -750,7 +747,7 @@ class MainWindow(QMainWindow):
         # Create application-wide shortcuts manager
         setup_application_shortcuts(self)
 
-        logger.info(f"Setup keyboard shortcuts for main window")
+        logger.info("Setup keyboard shortcuts for main window")
 
     def _show_keyboard_shortcuts_help(self) -> None:
         """Show keyboard shortcuts help dialog."""
@@ -1235,6 +1232,8 @@ class MainWindow(QMainWindow):
         try:
             from openemail.ui.accounts_dialog import AccountsDialog
         except ImportError:
+            from PyQt6.QtWidgets import QMessageBox
+
             QMessageBox.warning(
                 self, "功能未实现", "账户管理功能尚未实现，请使用'添加邮箱'功能。"
             )

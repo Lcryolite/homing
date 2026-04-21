@@ -1,32 +1,29 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Optional, List
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QApplication,
     QWidget,
     QVBoxLayout,
-    QHBoxLayout,
     QSplitter,
     QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QPushButton,
+    QProgressDialog,
     QToolBar,
     QToolButton,
-    QFrame,
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
     QFileDialog,
     QMenu,
-    QProgressBar,
 )
-from PyQt6.QtGui import QFont, QAction, QIcon
+from PyQt6.QtGui import QAction, QIcon
 
 from openemail.models.contact import Contact, ContactTag
 from openemail.models.account import Account

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QKeySequence, QShortcut
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -444,7 +443,6 @@ class ComposeWindow(QDialog):
                 if parsed.attachments:
                     # 创建临时文件保存附件
                     import tempfile
-                    import shutil
 
                     for att in parsed.attachments:
                         try:
@@ -555,7 +553,7 @@ class ComposeWindow(QDialog):
                             att["filename"], att["data"], att["mime_type"]
                         )
 
-            message = builder.build()
+            _message = builder.build()
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -610,7 +608,9 @@ class ComposeWindow(QDialog):
             logger.error("发送异常: %s", e)
             from PyQt6.QtCore import QTimer
 
-            def _on_exception():
+            err = e
+
+            def _on_exception(exc=err):
                 from PyQt6.QtWidgets import QMessageBox
 
                 self._send_btn.setEnabled(True)
@@ -618,7 +618,7 @@ class ComposeWindow(QDialog):
                 QMessageBox.critical(
                     self,
                     get_string("ComposeWindow", "send_error"),
-                    f"发送过程中发生错误:\n{str(e)}",
+                    f"发送过程中发生错误:\n{str(exc)}",
                 )
 
             QTimer.singleShot(0, _on_exception)
