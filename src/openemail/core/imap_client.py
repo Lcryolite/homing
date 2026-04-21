@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import email
 import logging
+import re
 from email import policy
 from email.header import decode_header
 from email.utils import parsedate_to_datetime, parseaddr
@@ -118,6 +119,7 @@ except ImportError:
 
 from openemail.models.account import Account  # noqa: E402
 from openemail.models.email import Email  # noqa: E402
+from openemail.models.folder import Folder  # noqa: E402
 from openemail.storage.database import db  # noqa: E402
 from openemail.storage.mail_store import mail_store  # noqa: E402
 
@@ -151,6 +153,27 @@ def extract_preview(text: str, max_len: int = 100) -> str:
     while "  " in text:
         text = text.replace("  ", " ")
     return text[:max_len] + ("..." if len(text) > max_len else "")
+
+
+def _extract_uidvalidity(select_resp: tuple) -> str:
+    """Extract UIDVALIDITY from an IMAP SELECT response.
+
+    Response format: (b'OK', [b'[UIDVALIDITY 12345] [UIDNEXT 678] ...', ...])
+    or bytes containing text like 'OK [UIDVALIDITY 12345]'
+    """
+    try:
+        status, items = select_resp
+        if not isinstance(items, (list, tuple)):
+            items = [items]
+        for item in items:
+            text = item if isinstance(item, str) else item.decode(errors="replace")
+            # Look for UIDVALIDITY <number>
+            m = re.search(r"UIDVALIDITY\s+(\d+)", text, re.IGNORECASE)
+            if m:
+                return m.group(1)
+    except Exception:
+        pass
+    return ""
 
 
 class IMAPClient:
@@ -280,13 +303,52 @@ class IMAPClient:
     async def sync_folder(
         self, folder_name: str, folder_id: int, limit: int = 50
     ) -> int:
+        """Synchronize a folder: new emails + flag updates + UIDVALIDITY check.
+
+        Steps:
+        1. SELECT folder — read UIDVALIDITY
+        2. If UIDVALIDITY changed → wipe local UIDs, reset high-water mark
+        3. UID SEARCH ALL → compare with existing + high-water mark
+        4. FETCH body for new UIDs only
+        5. FETCH FLAGS for existing UIDs → update is_read / is_flagged
+        """
         if not self._client:
             return 0
 
+        folder = Folder.get_by_id(folder_id)
+        if folder is None:
+            logger.error("sync_folder: folder id=%d not found", folder_id)
+            return 0
+
         actual_name = await self._resolve_folder_name(folder_name)
+
+        # ── 1. SELECT ──────────────────────────────────────────────
+        select_resp = await self._client.select(actual_name)
+        # select_resp is (status, [b'23 EXISTS', ...])
+        uid_validity_remote = _extract_uidvalidity(select_resp)
+
+        # ── 2. UIDVALIDITY check ───────────────────────────────────
+        stored_uv = folder.uid_validity or ""
+        if uid_validity_remote and stored_uv and uid_validity_remote != stored_uv:
+            logger.warning(
+                "UIDVALIDITY mismatch for %s: stored=%s remote=%s → wiping local",
+                folder_name, stored_uv, uid_validity_remote,
+            )
+            db.execute(
+                "DELETE FROM emails WHERE account_id = ? AND folder_id = ?",
+                (self._account.id, folder_id),
+            )
+            folder.uid_validity = uid_validity_remote
+            folder.last_uid = "0"
+            folder.save()
+        elif uid_validity_remote and not stored_uv:
+            # First sync — store it
+            folder.uid_validity = uid_validity_remote
+            folder.save()
+
+        # ── 3. UID SEARCH ALL ─────────────────────────────────────
         await self._client.select(actual_name)
 
-        # Use UID SEARCH so we compare UIDs with UIDs, not sequence numbers
         _, data = await self._client.uid("search", None, "ALL")
         if not data or not data[0]:
             logger.debug("sync_folder %s: UID search returned no data", folder_name)
@@ -305,6 +367,14 @@ class IMAPClient:
 
         uid_strings = [u.decode() if isinstance(u, bytes) else str(u) for u in all_uids]
 
+        # ── 4. High-water mark: skip UIDs already ≤ last_uid ──────
+        stored_last = folder.last_uid or "0"
+        try:
+            stored_last_int = int(stored_last)
+        except (ValueError, TypeError):
+            stored_last_int = 0
+
+        # Fetch existing UIDs for dedup (needed for the new-range UIDs only)
         existing_uids = {
             r["uid"]
             for r in db.fetchall(
@@ -313,11 +383,19 @@ class IMAPClient:
             )
         }
 
-        new_uids = [u for u in uid_strings if u not in existing_uids]
+        new_uids = []
+        max_uid_int = stored_last_int
+        for uid in uid_strings:
+            uid_int = int(uid) if uid.isdigit() else 0
+            if uid_int > max_uid_int:
+                max_uid_int = uid_int
+            if uid not in existing_uids:
+                new_uids.append(uid)
+
         if len(new_uids) > limit:
             new_uids = new_uids[-limit:]
-        synced = 0
 
+        synced = 0
         for uid in new_uids:
             _, msg_data = await self._client.uid("fetch", uid, "(RFC822)")
             if not msg_data or not msg_data[0]:
@@ -325,11 +403,9 @@ class IMAPClient:
 
             raw = None
             if isinstance(msg_data[0], tuple):
-                # (b'1 (RFC822 {1234}', b'<raw bytes>')
                 if len(msg_data[0]) >= 2:
                     raw = msg_data[0][1]
             if raw is None:
-                # Some servers return raw bytes as a separate list element
                 for part in msg_data:
                     if isinstance(part, bytes) and len(part) > 100:
                         raw = part
@@ -347,7 +423,60 @@ class IMAPClient:
                 email_obj.save()
                 synced += 1
 
+        # ── 5. Flag sync: update FLAGS for existing emails ────────
+        if existing_uids:
+            await self._flag_sync(folder_name, folder_id, existing_uids)
+
+        # ── 6. Update high-water mark ─────────────────────────────
+        if max_uid_int > stored_last_int:
+            folder.last_uid = str(max_uid_int)
+            folder.save()
+
         return synced
+
+    async def _flag_sync(
+        self, folder_name: str, folder_id: int, existing_uids: set
+    ) -> None:
+        """Fetch FLAGS for a batch of existing UIDs and update is_read/is_flagged."""
+        # Build comma-separated UID set (IMAP protocol supports up to ~1000)
+        uid_list = sorted(existing_uids, key=lambda u: int(u) if u.isdigit() else 0)
+        batch_size = 500
+        for i in range(0, len(uid_list), batch_size):
+            batch = uid_list[i : i + batch_size]
+            uid_set = ",".join(batch)
+            try:
+                _, flag_data = await self._client.uid("fetch", uid_set, "(FLAGS)")
+            except Exception as e:
+                logger.debug("Flag sync batch failed: %s", e)
+                continue
+            if not flag_data:
+                continue
+            for item in flag_data:
+                if not isinstance(item, (bytes, str)):
+                    continue
+                line = item if isinstance(item, str) else item.decode(errors="replace")
+                # Parse: '1 (FLAGS (\\Seen \\Flagged))'
+                uid_match = line.split("(FLAGS", 1)[0].strip()
+                if not uid_match or not uid_match.isdigit():
+                    continue
+                uid_str = uid_match
+                is_read = "\\Seen" in line
+                is_flagged = "\\Flagged" in line
+                # Only update if changed
+                db.execute(
+                    "UPDATE emails SET is_read = ?, is_flagged = ? "
+                    "WHERE account_id = ? AND folder_id = ? AND uid = ? "
+                    "AND (is_read != ? OR is_flagged != ?)",
+                    (
+                        int(is_read),
+                        int(is_flagged),
+                        self._account.id,
+                        folder_id,
+                        uid_str,
+                        int(is_read),
+                        int(is_flagged),
+                    ),
+                )
 
     async def _resolve_folder_name(self, folder_name: str) -> str:
         """将标准文件夹名映射到服务器实际路径，优先使用 PROVIDER_PRESETS 配置。"""
@@ -381,13 +510,17 @@ class IMAPClient:
             return []
 
         await self._client.select(folder_name)
-        _, data = await self._client.search("ALL")
+        _, data = await self._client.uid("search", None, "ALL")
         if not data or not data[0]:
             return []
 
-        uids = data[0].split()
-        if isinstance(uids[0], bytes):
-            uids = [u.decode() for u in uids]
+        uid_bytes = data[0]
+        if isinstance(uid_bytes, bytes):
+            uids = [u.decode() for u in uid_bytes.split()]
+        elif isinstance(uid_bytes, str):
+            uids = [u.decode() for u in uid_bytes.encode().split()]
+        else:
+            uids = []
 
         existing_uids = {
             r["uid"]
@@ -401,7 +534,7 @@ class IMAPClient:
         for uid in uids:
             if uid in existing_uids:
                 continue
-            _, msg_data = await self._client.fetch(uid, "(RFC822)")
+            _, msg_data = await self._client.uid("fetch", uid, "(RFC822)")
             if not msg_data:
                 continue
             raw = None
