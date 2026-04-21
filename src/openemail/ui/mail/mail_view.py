@@ -137,12 +137,12 @@ class MailViewWidget(QWidget):
         header_layout.addWidget(self._from_label)
 
         self._to_label = QLabel("")
-        self._to_label.setStyleSheet("font-size: 11px; color: #888;")
+        self._to_label.setStyleSheet("font-size: 11px; color: #6C665F;")
         self._to_label.setWordWrap(True)
         header_layout.addWidget(self._to_label)
 
         self._date_label = QLabel("")
-        self._date_label.setStyleSheet("font-size: 11px; color: #888;")
+        self._date_label.setStyleSheet("font-size: 11px; color: #6C665F;")
         header_layout.addWidget(self._date_label)
 
         self._spam_label = QLabel("")
@@ -152,7 +152,7 @@ class MailViewWidget(QWidget):
 
         separator = QWidget()
         separator.setFixedHeight(1)
-        separator.setStyleSheet("background-color: #45475a;")
+        separator.setStyleSheet("background-color: #E8E1D8;")
         header_layout.addWidget(separator)
 
         self._attachment_bar = AttachmentBar()

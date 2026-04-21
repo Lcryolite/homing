@@ -304,7 +304,7 @@ class Sidebar(QWidget):
                     status_display = get_status_display(account.connection_status)
                     label = QLabel(f"  ⚠ {account.email}（{status_display}）")
                     label.setStyleSheet(
-                        "font-size: 11px; padding: 2px 12px; color: #ff6b6b;"
+                        "font-size: 11px; padding: 2px 12px; color: #C97850;"
                     )
                     label.setToolTip(
                         f"账号状态: {status_display}\n需要用户操作修复该账号"
@@ -316,7 +316,7 @@ class Sidebar(QWidget):
                         f"  … 还有 {len(need_action) - 2} 个账号需要修复"
                     )
                     more_label.setStyleSheet(
-                        "font-size: 10px; padding: 2px 12px; color: #999;"
+                        "font-size: 10px; padding: 2px 12px; color: #6C665F;"
                     )
                     self._account_layout.addWidget(more_label)
             else:

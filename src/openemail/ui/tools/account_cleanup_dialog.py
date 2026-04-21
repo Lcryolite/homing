@@ -98,7 +98,7 @@ class AccountCleanupDialog(QDialog):
         self._cleanup_btn.clicked.connect(self._run_cleanup)
         self._cleanup_btn.setStyleSheet("""
             QPushButton {
-                background: #f38ba8;
+                background: #C97850;
                 color: #1e1e2e;
                 font-weight: bold;
             }
@@ -172,7 +172,7 @@ class AccountCleanupDialog(QDialog):
             }
             QHeaderView::section {
                 background: #313244;
-                color: #cdd6f4;
+                color: #141413;
                 border: none;
                 padding: 6px 8px;
                 font-weight: bold;

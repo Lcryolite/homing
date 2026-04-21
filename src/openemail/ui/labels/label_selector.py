@@ -74,12 +74,12 @@ class LabelBadge(QFrame):
             self.remove_btn.setFixedSize(12, 12)
             self.remove_btn.setStyleSheet("""
                 QLabel {
-                    color: #cdd6f4;
+                    color: #141413;
                     font-weight: bold;
                     font-size: 10px;
                 }
                 QLabel:hover {
-                    color: #f38ba8;
+                    color: #C97850;
                 }
             """)
             self.remove_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -240,7 +240,7 @@ class LabelSelector(QWidget):
         # 占位符文本
         self.placeholder_label = QLabel("无标签")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #a6adc8; font-style: italic;")
+        self.placeholder_label.setStyleSheet("color: #6C665F; font-style: italic;")
         self.labels_layout.addWidget(self.placeholder_label)
 
         self.labels_layout.addStretch()

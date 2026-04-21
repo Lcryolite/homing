@@ -73,12 +73,12 @@ class WelcomeDialogEnhanced(QDialog):
 
         title = QLabel("欢迎来到 OpenEmail")
         title.setFont(QFont("", 24, QFont.Weight.Bold))
-        title.setStyleSheet("color: #89b4fa; margin-bottom: 8px;")
+        title.setStyleSheet("color: #7C8A9A; margin-bottom: 8px;")
         title_layout.addWidget(title)
 
         subtitle = QLabel("轻松设置您的邮箱账户")
         subtitle.setFont(QFont("", 11))
-        subtitle.setStyleSheet("color: #a6adc8;")
+        subtitle.setStyleSheet("color: #6C665F;")
         title_layout.addWidget(subtitle)
 
         layout.addWidget(title_widget)
@@ -177,14 +177,14 @@ class WelcomeDialogEnhanced(QDialog):
         for feature in features:
             feature_label = QLabel(f"• {feature}")
             feature_label.setWordWrap(True)
-            feature_label.setStyleSheet("font-size: 13px; color: #cdd6f4;")
+            feature_label.setStyleSheet("font-size: 13px; color: #141413;")
             features_layout.addWidget(feature_label)
 
         layout.addWidget(features_frame)
 
         # 提示信息
         tip_label = QLabel("💡 只需几分钟，即可完成初始设置并开始使用。")
-        tip_label.setStyleSheet("font-size: 12px; color: #a6adc8; font-style: italic;")
+        tip_label.setStyleSheet("font-size: 12px; color: #6C665F; font-style: italic;")
         tip_label.setWordWrap(True)
         layout.addWidget(tip_label)
 
@@ -268,12 +268,12 @@ class WelcomeDialogEnhanced(QDialog):
         tip_frame.setStyleSheet("""
             QFrame {
                 background: #f9c9c6;
-                border: 1px solid #eba0ac;
+                border: 1px solid #7D9174;
                 border-radius: 6px;
                 padding: 12px;
             }
             QLabel {
-                color: #8839ef;
+                color: #C97850;
                 font-size: 12px;
             }
         """)
@@ -375,7 +375,7 @@ class WelcomeDialogEnhanced(QDialog):
         title_label = QLabel("设置完成！")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setFont(QFont("", 24, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: #89b4fa;")
+        title_label.setStyleSheet("color: #7C8A9A;")
         layout.addWidget(title_label)
 
         # 恭喜信息
@@ -385,7 +385,7 @@ class WelcomeDialogEnhanced(QDialog):
         )
         congrats_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         congrats_label.setFont(QFont("", 13))
-        congrats_label.setStyleSheet("color: #cdd6f4; line-height: 1.5;")
+        congrats_label.setStyleSheet("color: #141413; line-height: 1.5;")
         congrats_label.setWordWrap(True)
         layout.addWidget(congrats_label)
 

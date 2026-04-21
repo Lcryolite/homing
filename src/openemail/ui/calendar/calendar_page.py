@@ -29,17 +29,17 @@ from openemail.models.calendar_event import CalendarEvent
 
 
 CATPPUCCIN_BG = "#1e1e2e"
-CATPPUCCIN_ACCENT = "#89b4fa"
-CATPPUCCIN_TEXT = "#cdd6f4"
-CATPPUCCIN_MUTED = "#a6adc8"
+CATPPUCCIN_ACCENT = "#7C8A9A"
+CATPPUCCIN_TEXT = "#141413"
+CATPPUCCIN_MUTED = "#6C665F"
 CATPPUCCIN_CARD = "#313244"
 CATPPUCCIN_BORDER = "#45475a"
 
 EVENT_COLORS = [
-    "#89b4fa",
+    "#7C8A9A",
     "#a6e3a1",
-    "#f9e2af",
-    "#f38ba8",
+    "#C97850",
+    "#C97850",
     "#cba6f7",
     "#fab387",
     "#94e2d5",
@@ -299,7 +299,7 @@ class EventDetailPanel(QWidget):
         self._delete_btn = QPushButton("删除")
         self._delete_btn.setStyleSheet(f"""
             QPushButton {{
-                background: #f38ba8;
+                background: #C97850;
                 color: {CATPPUCCIN_BG};
                 border: none;
                 border-radius: 6px;

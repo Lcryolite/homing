@@ -42,7 +42,7 @@ class LabelColorWidget(QPushButton):
 
     color_changed = pyqtSignal(str)
 
-    def __init__(self, color: str = "#89b4fa", parent=None):
+    def __init__(self, color: str = "#7C8A9A", parent=None):
         super().__init__(parent)
 
         self._color = color
@@ -68,7 +68,7 @@ class LabelColorWidget(QPushButton):
                 border-radius: 6px;
             }}
             QPushButton:hover {{
-                border-color: #89b4fa;
+                border-color: #7C8A9A;
             }}
         """)
 
@@ -79,14 +79,14 @@ class LabelColorWidget(QPushButton):
 
         # 设置预设颜色
         preset_colors = [
-            "#89b4fa",
+            "#7C8A9A",
             "#74c7ec",
             "#89dceb",
             "#94e2d5",  # 蓝色系
             "#a6e3a1",
-            "#f9e2af",
+            "#C97850",
             "#fab387",
-            "#f38ba8",  # 绿色/黄色/橙色/粉色
+            "#C97850",  # 绿色/黄色/橙色/粉色
             "#cba6f7",
             "#f2cdcd",
             "#f5c2e7",
@@ -148,7 +148,7 @@ class LabelTreeWidget(QTreeWidget):
                 background-color: #45475a;
             }
             QTreeWidget::item:hover {
-                background-color: #585b70;
+                background-color: #6C665F;
             }
         """)
 
@@ -675,7 +675,7 @@ class LabelManager(QWidget):
         # 占位符文本
         self.placeholder_label = QLabel("选择标签查看详情")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #a6adc8; font-style: italic;")
+        self.placeholder_label.setStyleSheet("color: #6C665F; font-style: italic;")
         self.detail_layout.addWidget(self.placeholder_label)
 
         right_layout.addWidget(self.detail_widget, 1)

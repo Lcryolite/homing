@@ -101,14 +101,14 @@ class ConditionWidget(QWidget):
         self.delete_button.setFixedSize(24, 24)
         self.delete_button.setStyleSheet("""
             QPushButton {
-                background-color: #ff6b6b;
+                background-color: #C97850;
                 color: white;
                 border: none;
                 border-radius: 4px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #ff5252;
+                background-color: #B56A42;
             }
         """)
 
@@ -348,14 +348,14 @@ class ActionWidget(QWidget):
         self.delete_button.setFixedSize(24, 24)
         self.delete_button.setStyleSheet("""
             QPushButton {
-                background-color: #ff6b6b;
+                background-color: #C97850;
                 color: white;
                 border: none;
                 border-radius: 4px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #ff5252;
+                background-color: #B56A42;
             }
         """)
 

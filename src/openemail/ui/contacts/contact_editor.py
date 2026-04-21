@@ -50,7 +50,7 @@ class ContactEditorDialog(QDialog):
         # 标题
         title_label = QLabel("联系人信息")
         title_label.setFont(QFont("", 18, QFont.Weight.Bold))
-        title_label.setStyleSheet("color: #89b4fa; margin-bottom: 8px;")
+        title_label.setStyleSheet("color: #7C8A9A; margin-bottom: 8px;")
         layout.addWidget(title_label)
 
         # 头像区域
@@ -73,8 +73,8 @@ class ContactEditorDialog(QDialog):
         self.avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.avatar_label.setStyleSheet("""
             QLabel {
-                background: #585b70;
-                color: #cdd6f4;
+                background: #6C665F;
+                color: #141413;
                 border-radius: 40px;
                 font-size: 32px;
                 font-weight: bold;

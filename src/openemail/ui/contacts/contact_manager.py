@@ -88,7 +88,7 @@ class ContactListWidget(QWidget):
 
         # 分组列表
         group_label = QLabel("分组")
-        group_label.setStyleSheet("font-weight: bold; padding: 8px; color: #89b4fa;")
+        group_label.setStyleSheet("font-weight: bold; padding: 8px; color: #7C8A9A;")
         left_layout.addWidget(group_label)
 
         self.group_list = QListWidget()
@@ -162,7 +162,7 @@ class ContactListWidget(QWidget):
         # 状态栏
         self.status_label = QLabel("就绪")
         self.status_label.setStyleSheet(
-            "padding: 4px 8px; color: #a6adc8; background: #313244; font-size: 11px;"
+            "padding: 4px 8px; color: #6C665F; background: #313244; font-size: 11px;"
         )
         layout.addWidget(self.status_label)
 

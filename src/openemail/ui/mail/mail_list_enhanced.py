@@ -61,8 +61,8 @@ class EnhancedMailItemWidget(QWidget):
         sender_icon.setText(self._get_sender_icon(email))
         sender_icon.setStyleSheet("""
             QLabel {
-                background: #585b70;
-                color: #cdd6f4;
+                background: #6C665F;
+                color: #141413;
                 border-radius: 16px;
                 font-size: 14px;
                 font-weight: bold;
@@ -81,14 +81,14 @@ class EnhancedMailItemWidget(QWidget):
         sender_label.setStyleSheet("font-weight: bold; font-size: 13px;")
         if not email.is_read:
             sender_label.setStyleSheet(
-                "font-weight: bold; font-size: 13px; color: #cdd6f4;"
+                "font-weight: bold; font-size: 13px; color: #141413;"
             )
         sender_time_layout.addWidget(sender_label)
 
         sender_time_layout.addStretch()
 
         date_label = QLabel(email.display_date)
-        date_label.setStyleSheet("color: #a6adc8; font-size: 11px;")
+        date_label.setStyleSheet("color: #6C665F; font-size: 11px;")
         sender_time_layout.addWidget(date_label)
 
         info_layout.addLayout(sender_time_layout)
@@ -98,14 +98,14 @@ class EnhancedMailItemWidget(QWidget):
         subject_label.setStyleSheet("font-size: 12px;")
         if not email.is_read:
             subject_label.setStyleSheet(
-                "font-size: 12px; font-weight: bold; color: #cdd6f4;"
+                "font-size: 12px; font-weight: bold; color: #141413;"
             )
         info_layout.addWidget(subject_label)
 
         # 预览文本
         if email.preview_text:
             preview_label = QLabel(email.preview_text)
-            preview_label.setStyleSheet("color: #a6adc8; font-size: 11px;")
+            preview_label.setStyleSheet("color: #6C665F; font-size: 11px;")
             preview_label.setWordWrap(False)
             info_layout.addWidget(preview_label)
 
@@ -141,21 +141,21 @@ class EnhancedMailItemWidget(QWidget):
         # 星标图标
         if email.is_flagged:
             flag_label = QLabel("★")
-            flag_label.setStyleSheet("color: #f9e2af; font-size: 14px;")
+            flag_label.setStyleSheet("color: #C97850; font-size: 14px;")
             flag_label.setToolTip("已加星标")
             icon_layout.addWidget(flag_label)
 
         # 附件图标
         if email.has_attachment:
             att_label = QLabel("📎")
-            att_label.setStyleSheet("font-size: 12px; color: #a6adc8;")
+            att_label.setStyleSheet("font-size: 12px; color: #6C665F;")
             att_label.setToolTip("有附件")
             icon_layout.addWidget(att_label)
 
         # 垃圾邮件图标
         if email.is_spam:
             spam_label = QLabel("🚫")
-            spam_label.setStyleSheet("font-size: 12px; color: #f38ba8;")
+            spam_label.setStyleSheet("font-size: 12px; color: #C97850;")
             spam_label.setToolTip("垃圾邮件")
             icon_layout.addWidget(spam_label)
 
@@ -189,9 +189,9 @@ class EnhancedMailItemWidget(QWidget):
             self._checkbox.setText("✓")
             self._checkbox.setStyleSheet("""
                 QLabel {
-                    background: #89b4fa;
-                    color: #11111b;
-                    border: 2px solid #89b4fa;
+                    background: #7C8A9A;
+                    color: #141413;
+                    border: 2px solid #7C8A9A;
                     border-radius: 4px;
                     font-size: 12px;
                     font-weight: bold;
@@ -202,11 +202,11 @@ class EnhancedMailItemWidget(QWidget):
             self._checkbox.setStyleSheet("""
                 QLabel {
                     background: transparent;
-                    border: 2px solid #585b70;
+                    border: 2px solid #6C665F;
                     border-radius: 4px;
                 }
                 QLabel:hover {
-                    border-color: #89b4fa;
+                    border-color: #7C8A9A;
                 }
             """)
 
@@ -215,7 +215,7 @@ class EnhancedMailItemWidget(QWidget):
             self.setStyleSheet("""
                 EnhancedMailItemWidget {
                     background: rgba(137, 180, 250, 0.2);
-                    border-left: 4px solid #89b4fa;
+                    border-left: 4px solid #7C8A9A;
                 }
                 EnhancedMailItemWidget:hover {
                     background: rgba(137, 180, 250, 0.3);
@@ -319,14 +319,14 @@ class BatchActionToolbar(QToolBar):
                 background: #45475a;
             }
             QToolButton:disabled {
-                color: #585b70;
+                color: #6C665F;
             }
         """)
 
         # 选择计数
         self._count_label = QLabel("选择 0 封邮件")
         self._count_label.setStyleSheet(
-            "font-size: 12px; color: #a6adc8; padding: 0 8px;"
+            "font-size: 12px; color: #6C665F; padding: 0 8px;"
         )
         self.addWidget(self._count_label)
 
@@ -369,14 +369,14 @@ class BatchActionToolbar(QToolBar):
         # 删除
         self._delete_btn = QToolButton()
         self._delete_btn.setText("删除")
-        self._delete_btn.setStyleSheet("color: #f38ba8;")
+        self._delete_btn.setStyleSheet("color: #C97850;")
         self._delete_btn.clicked.connect(self._on_delete)
         self.addWidget(self._delete_btn)
 
         # 标记为垃圾邮件
         self._spam_btn = QToolButton()
         self._spam_btn.setText("标记为垃圾")
-        self._spam_btn.setStyleSheet("color: #f38ba8;")
+        self._spam_btn.setStyleSheet("color: #C97850;")
         self._spam_btn.clicked.connect(self._on_mark_spam)
         self.addWidget(self._spam_btn)
 
@@ -397,12 +397,12 @@ class BatchActionToolbar(QToolBar):
         if count > 0:
             self._count_label.setText(f"选择 {count} 封邮件")
             self._count_label.setStyleSheet(
-                "font-size: 12px; color: #89b4fa; font-weight: bold; padding: 0 8px;"
+                "font-size: 12px; color: #7C8A9A; font-weight: bold; padding: 0 8px;"
             )
         else:
             self._count_label.setText("选择 0 封邮件")
             self._count_label.setStyleSheet(
-                "font-size: 12px; color: #a6adc8; padding: 0 8px;"
+                "font-size: 12px; color: #6C665F; padding: 0 8px;"
             )
 
         self._update_button_states()
@@ -555,7 +555,7 @@ class EnhancedMailListWidget(QWidget):
         status_layout.setContentsMargins(0, 0, 0, 0)
 
         self._status_label = QLabel("就绪")
-        self._status_label.setStyleSheet("color: #a6adc8; font-size: 11px;")
+        self._status_label.setStyleSheet("color: #6C665F; font-size: 11px;")
         status_layout.addWidget(self._status_label)
 
         status_layout.addStretch()

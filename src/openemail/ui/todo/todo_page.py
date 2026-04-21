@@ -28,10 +28,10 @@ from PyQt6.QtGui import QPixmap, QPainter, QColor, QFont
 from openemail.models.todo import Todo
 
 PRIORITY_COLORS = {
-    "urgent": "#f38ba8",
+    "urgent": "#C97850",
     "high": "#fab387",
-    "normal": "#89b4fa",
-    "low": "#a6adc8",
+    "normal": "#7C8A9A",
+    "low": "#6C665F",
 }
 
 PRIORITY_ORDER = {"urgent": 0, "high": 1, "normal": 2, "low": 3}
@@ -52,14 +52,14 @@ VIEW_TITLES = {
 CATPPUCCIN_BASE = "#1e1e2e"
 CATPPUCCIN_SURFACE0 = "#313244"
 CATPPUCCIN_SURFACE1 = "#45475a"
-CATPPUCCIN_SURFACE2 = "#585b70"
+CATPPUCCIN_SURFACE2 = "#6C665F"
 CATPPUCCIN_OVERLAY0 = "#6c7086"
-CATPPUCCIN_TEXT = "#cdd6f4"
-CATPPUCCIN_SUBTEXT = "#a6adc8"
-CATPPUCCIN_BLUE = "#89b4fa"
+CATPPUCCIN_TEXT = "#141413"
+CATPPUCCIN_SUBTEXT = "#6C665F"
+CATPPUCCIN_BLUE = "#7C8A9A"
 CATPPUCCIN_GREEN = "#a6e3a1"
-CATPPUCCIN_RED = "#f38ba8"
-CATPPUCCIN_YELLOW = "#f9e2af"
+CATPPUCCIN_RED = "#C97850"
+CATPPUCCIN_YELLOW = "#C97850"
 CATPPUCCIN_MAUVE = "#cba6f7"
 CATPPUCCIN_PEACH = "#fab387"
 CATPPUCCIN_TEAL = "#94e2d5"

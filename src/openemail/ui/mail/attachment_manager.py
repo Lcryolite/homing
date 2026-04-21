@@ -70,7 +70,7 @@ class AttachmentItem(QFrame):
             }
             AttachmentItem:hover {
                 background: #45475a;
-                border-color: #585b70;
+                border-color: #6C665F;
             }
         """)
 
@@ -101,7 +101,7 @@ class AttachmentItem(QFrame):
         file_layout.addWidget(name_label)
 
         info_label = QLabel(f"{self.file_size} • {self.file_type.split('/')[0]}")
-        info_label.setStyleSheet("font-size: 11px; color: #a6adc8;")
+        info_label.setStyleSheet("font-size: 11px; color: #6C665F;")
         file_layout.addWidget(info_label)
 
         layout.addLayout(file_layout)
@@ -130,13 +130,13 @@ class AttachmentItem(QFrame):
             QPushButton {
                 font-size: 11px;
                 padding: 2px 8px;
-                background: #f38ba8;
-                color: #11111b;
+                background: #C97850;
+                color: #141413;
                 border: none;
                 border-radius: 3px;
             }
             QPushButton:hover {
-                background: #eba0ac;
+                background: #7D9174;
             }
         """)
         btn_layout.addWidget(remove_btn)
@@ -194,7 +194,7 @@ class AttachmentManager(QWidget):
         title_layout.addWidget(title_label)
 
         self.status_label = QLabel("0个文件 (0 B)")
-        self.status_label.setStyleSheet("font-size: 11px; color: #a6adc8;")
+        self.status_label.setStyleSheet("font-size: 11px; color: #6C665F;")
         title_layout.addWidget(self.status_label)
 
         title_layout.addStretch()
@@ -234,7 +234,7 @@ class AttachmentManager(QWidget):
         self.help_label = QLabel("📎 提示：将文件拖放到此区域，或点击「添加附件」按钮")
         self.help_label.setStyleSheet("""
             font-size: 11px;
-            color: #a6adc8;
+            color: #6C665F;
             background: #313244;
             padding: 8px;
             border-radius: 4px;
@@ -248,7 +248,7 @@ class AttachmentManager(QWidget):
             event.acceptProposedAction()
             self.setStyleSheet("""
                 AttachmentManager {
-                    border: 2px dashed #89b4fa;
+                    border: 2px dashed #7C8A9A;
                     border-radius: 6px;
                     background: rgba(137, 180, 250, 0.1);
                 }
@@ -440,10 +440,10 @@ class AttachmentManager(QWidget):
         # 如果接近大小限制，显示警告
         if self.total_size > self.max_total_size * 0.9:
             self.status_label.setStyleSheet(
-                "font-size: 11px; color: #f38ba8; font-weight: bold;"
+                "font-size: 11px; color: #C97850; font-weight: bold;"
             )
         else:
-            self.status_label.setStyleSheet("font-size: 11px; color: #a6adc8;")
+            self.status_label.setStyleSheet("font-size: 11px; color: #6C665F;")
 
     def get_attachment_paths(self) -> List[str]:
         """获取所有附件路径"""

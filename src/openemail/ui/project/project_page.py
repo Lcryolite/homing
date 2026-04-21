@@ -26,20 +26,20 @@ from PyQt6.QtWidgets import (
 from openemail.models.project import Project, ProjectColumn, ProjectCard
 
 PRIORITY_COLORS = {
-    "urgent": "#f38ba8",
+    "urgent": "#C97850",
     "high": "#fab387",
-    "normal": "#89b4fa",
-    "low": "#a6adc8",
+    "normal": "#7C8A9A",
+    "low": "#6C665F",
 }
 
 CATPPUCCIN_BASE = "#1e1e2e"
 CATPPUCCIN_SURFACE0 = "#313244"
 CATPPUCCIN_SURFACE1 = "#45475a"
-CATPPUCCIN_SURFACE2 = "#585b70"
+CATPPUCCIN_SURFACE2 = "#6C665F"
 CATPPUCCIN_OVERLAY0 = "#6c7086"
-CATPPUCCIN_TEXT = "#cdd6f4"
-CATPPUCCIN_SUBTEXT = "#a6adc8"
-CATPPUCCIN_BLUE = "#89b4fa"
+CATPPUCCIN_TEXT = "#141413"
+CATPPUCCIN_SUBTEXT = "#6C665F"
+CATPPUCCIN_BLUE = "#7C8A9A"
 CATPPUCCIN_GREEN = "#a6e3a1"
 CATPPUCCIN_MAUVE = "#cba6f7"
 
@@ -50,7 +50,7 @@ class ProjectEditDialog(QDialog):
     ):
         super().__init__(parent)
         self._project = project
-        self._color = project.color if project else "#89b4fa"
+        self._color = project.color if project else "#7C8A9A"
         self._is_edit = project is not None
         self.setWindowTitle("编辑项目" if self._is_edit else "新建项目")
         self.setMinimumWidth(400)
@@ -94,7 +94,7 @@ class ProjectEditDialog(QDialog):
             return
         self._name_edit.setText(self._project.name)
         self._desc_edit.setPlainText(self._project.description)
-        self._color = self._project.color or "#89b4fa"
+        self._color = self._project.color or "#7C8A9A"
         self._update_color_btn()
 
     def _pick_color(self):

@@ -98,7 +98,7 @@ class ContactDetailWidget(QWidget):
         self.placeholder_label.setStyleSheet("""
             QLabel {
                 font-size: 14px;
-                color: #a6adc8;
+                color: #6C665F;
                 padding: 40px;
             }
         """)
@@ -138,8 +138,8 @@ class ContactDetailWidget(QWidget):
         self.avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.avatar_label.setStyleSheet("""
             QLabel {
-                background: #585b70;
-                color: #cdd6f4;
+                background: #6C665F;
+                color: #141413;
                 border-radius: 40px;
                 font-size: 32px;
                 font-weight: bold;
@@ -153,22 +153,22 @@ class ContactDetailWidget(QWidget):
 
         self.name_label = QLabel()
         self.name_label.setFont(QFont("", 18, QFont.Weight.Bold))
-        self.name_label.setStyleSheet("color: #cdd6f4;")
+        self.name_label.setStyleSheet("color: #141413;")
         info_layout.addWidget(self.name_label)
 
         self.email_label = QLabel()
-        self.email_label.setStyleSheet("color: #89b4fa; font-size: 14px;")
+        self.email_label.setStyleSheet("color: #7C8A9A; font-size: 14px;")
         info_layout.addWidget(self.email_label)
 
         self.company_label = QLabel()
-        self.company_label.setStyleSheet("color: #a6adc8; font-size: 13px;")
+        self.company_label.setStyleSheet("color: #6C665F; font-size: 13px;")
         info_layout.addWidget(self.company_label)
 
         info_layout.addStretch()
 
         # 标签区域
         self.tags_label = QLabel()
-        self.tags_label.setStyleSheet("color: #f9e2af; font-size: 12px;")
+        self.tags_label.setStyleSheet("color: #C97850; font-size: 12px;")
         info_layout.addWidget(self.tags_label)
 
         profile_layout.addLayout(info_layout, 1)
@@ -203,7 +203,7 @@ class ContactDetailWidget(QWidget):
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 5px 0 5px;
-                color: #89b4fa;
+                color: #7C8A9A;
             }
         """)
 
@@ -240,8 +240,8 @@ class ContactDetailWidget(QWidget):
         self.notes_text.setStyleSheet("""
             QTextEdit {
                 background: #1e1e2e;
-                color: #cdd6f4;
-                border: 1px solid #585b70;
+                color: #141413;
+                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 8px;
             }
@@ -287,11 +287,11 @@ class ContactDetailWidget(QWidget):
         row_layout.setSpacing(12)
 
         label = QLabel(label_text)
-        label.setStyleSheet("font-weight: bold; color: #a6adc8; min-width: 60px;")
+        label.setStyleSheet("font-weight: bold; color: #6C665F; min-width: 60px;")
         row_layout.addWidget(label)
 
         value = QLabel(value_text)
-        value.setStyleSheet("color: #cdd6f4;")
+        value.setStyleSheet("color: #141413;")
         value.setWordWrap(True)
         row_layout.addWidget(value, 1)
 

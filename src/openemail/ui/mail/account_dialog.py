@@ -66,7 +66,7 @@ class AccountDialog(QDialog):
 
         # 状态显示标签
         self._status_label = QLabel("状态: 未验证")
-        self._status_label.setStyleSheet("color: gray;")
+        self._status_label.setStyleSheet("color: #6C665F;")
         layout.addWidget(self._status_label)
 
         from openemail.models.account import _PROVIDER_STATUS_LABELS
@@ -162,7 +162,7 @@ class AccountDialog(QDialog):
         oauth_layout = QGridLayout(oauth_group)
 
         self._oauth_status_label = QLabel("状态: 未配置OAuth")
-        self._oauth_status_label.setStyleSheet("color: gray;")
+        self._oauth_status_label.setStyleSheet("color: #6C665F;")
         oauth_layout.addWidget(self._oauth_status_label, 0, 0, 1, 2)
 
         self._authorize_btn = QPushButton("授权")
@@ -355,14 +355,14 @@ class AccountDialog(QDialog):
 
         if auth_type != "oauth2":
             self._oauth_status_label.setText("状态: OAuth未启用")
-            self._oauth_status_label.setStyleSheet("color: gray;")
+            self._oauth_status_label.setStyleSheet("color: #6C665F;")
             self._authorize_btn.setEnabled(False)
             self._refresh_btn.setEnabled(False)
             return
 
         if not email:
             self._oauth_status_label.setText("状态: 请输入邮箱地址")
-            self._oauth_status_label.setStyleSheet("color: orange;")
+            self._oauth_status_label.setStyleSheet("color: #C97850;")
             self._authorize_btn.setEnabled(False)
             self._refresh_btn.setEnabled(False)
             return
@@ -374,7 +374,7 @@ class AccountDialog(QDialog):
 
         if not provider:
             self._oauth_status_label.setText("状态: 不支持此邮箱的OAuth")
-            self._oauth_status_label.setStyleSheet("color: red;")
+            self._oauth_status_label.setStyleSheet("color: #C97850;")
             self._authorize_btn.setEnabled(False)
             self._refresh_btn.setEnabled(False)
             return
@@ -383,7 +383,7 @@ class AccountDialog(QDialog):
         oauth_mgr = OAuthManager()
         if not oauth_mgr.is_provider_available(provider):
             self._oauth_status_label.setText("状态: OAuth客户端未配置")
-            self._oauth_status_label.setStyleSheet("color: orange;")
+            self._oauth_status_label.setStyleSheet("color: #C97850;")
             self._authorize_btn.setEnabled(False)
             self._refresh_btn.setEnabled(False)
             return
@@ -397,24 +397,24 @@ class AccountDialog(QDialog):
             status_text = self._account.oauth_status_display()
             if "需要重新授权" in status_text or "令牌即将过期" in status_text:
                 self._oauth_status_label.setText(f"状态: {status_text}{status_suffix}")
-                self._oauth_status_label.setStyleSheet("color: orange;")
+                self._oauth_status_label.setStyleSheet("color: #C97850;")
                 self._authorize_btn.setEnabled(True)
                 self._refresh_btn.setEnabled(True)
             elif "已授权" in status_text:
                 self._oauth_status_label.setText(f"状态: {status_text}{status_suffix}")
-                self._oauth_status_label.setStyleSheet("color: green;")
+                self._oauth_status_label.setStyleSheet("color: #7D9174;")
                 self._authorize_btn.setEnabled(True)
                 self._refresh_btn.setEnabled(True)
             else:
                 self._oauth_status_label.setText(f"状态: {status_text}{status_suffix}")
-                self._oauth_status_label.setStyleSheet("color: blue;")
+                self._oauth_status_label.setStyleSheet("color: #7C8A9A;")
                 self._authorize_btn.setEnabled(True)
                 self._refresh_btn.setEnabled(False)
         else:
             self._oauth_status_label.setText(
                 f"状态: 点击授权按钮开始OAuth流程{status_suffix}"
             )
-            self._oauth_status_label.setStyleSheet("color: blue;")
+            self._oauth_status_label.setStyleSheet("color: #7C8A9A;")
             self._authorize_btn.setEnabled(True)
             self._refresh_btn.setEnabled(False)
 
@@ -486,7 +486,7 @@ class AccountDialog(QDialog):
             self._oauth_status_label.setText(
                 f"状态: {provider_name} OAuth代码就绪，待真实环境验证{support_text}"
             )
-            self._oauth_status_label.setStyleSheet("color: blue;")
+            self._oauth_status_label.setStyleSheet("color: #7C8A9A;")
 
             # 对于Microsoft，显示信息对话框而不是实际启动
             _reply = QMessageBox.information(
@@ -506,7 +506,7 @@ class AccountDialog(QDialog):
             self._oauth_status_label.setText(
                 f"状态: 打开{provider_name}授权页面...{support_text}"
             )
-            self._oauth_status_label.setStyleSheet("color: orange;")
+            self._oauth_status_label.setStyleSheet("color: #C97850;")
 
         # 启动异步授权
         from openemail.core.oauth2_new import oauth_manager
@@ -541,7 +541,7 @@ class AccountDialog(QDialog):
             QMessageBox.warning(self, "授权失败", f"{error_msg}\n\n建议: {suggestion}")
             self._authorize_btn.setText("授权失败，重试")
             self._oauth_status_label.setText(f"状态: 授权失败{support_text}")
-            self._oauth_status_label.setStyleSheet("color: red;")
+            self._oauth_status_label.setStyleSheet("color: #C97850;")
 
             # 3秒后恢复按钮
             QTimer.singleShot(3000, self._reset_oauth_buttons)
@@ -551,7 +551,7 @@ class AccountDialog(QDialog):
             QMessageBox.warning(self, "授权失败", "未获取到令牌")
             self._authorize_btn.setText("授权失败，重试")
             self._oauth_status_label.setText(f"状态: 授权失败{support_text}")
-            self._oauth_status_label.setStyleSheet("color: red;")
+            self._oauth_status_label.setStyleSheet("color: #C97850;")
             QTimer.singleShot(3000, self._reset_oauth_buttons)
             return
 
@@ -584,7 +584,7 @@ class AccountDialog(QDialog):
             self._oauth_status_label.setText(
                 f"状态: 授权成功，令牌已保存到数据库{support_text}"
             )
-            self._oauth_status_label.setStyleSheet("color: green;")
+            self._oauth_status_label.setStyleSheet("color: #7D9174;")
             self._authorize_btn.setText("重新授权")
 
             QMessageBox.information(
@@ -613,7 +613,7 @@ class AccountDialog(QDialog):
             self._oauth_status_label.setText(
                 f"状态: 授权成功，请完成配置并保存账户{support_text}"
             )
-            self._oauth_status_label.setStyleSheet("color: green;")
+            self._oauth_status_label.setStyleSheet("color: #7D9174;")
             self._authorize_btn.setText("重新授权")
 
             QMessageBox.information(
@@ -1000,7 +1000,7 @@ class AccountDialog(QDialog):
                     )
 
                 self._test_btn.setText(success_text)
-                self._test_btn.setStyleSheet("background-color: #90EE90;")
+                self._test_btn.setStyleSheet("background-color: #E8F0E4;")
 
                 # 显示详细结果
                 details = []
@@ -1133,20 +1133,20 @@ class AccountDialog(QDialog):
 
         # 根据状态设置颜色
         if "验证通过" in status_text or "已验证" in status_text:
-            self._status_label.setStyleSheet("color: green; font-weight: bold;")
+            self._status_label.setStyleSheet("color: #7D9174; font-weight: bold;")
         elif "失败" in status_text or "错误" in status_text:
-            self._status_label.setStyleSheet("color: red; font-weight: bold;")
+            self._status_label.setStyleSheet("color: #C97850; font-weight: bold;")
         elif "验证中" in status_text:
-            self._status_label.setStyleSheet("color: orange; font-weight: bold;")
+            self._status_label.setStyleSheet("color: #C97850; font-weight: bold;")
         elif "未验证" in status_text or "需要重新验证" in status_text:
-            self._status_label.setStyleSheet("color: gray;")
+            self._status_label.setStyleSheet("color: #6C665F;")
         else:
-            self._status_label.setStyleSheet("color: black;")
+            self._status_label.setStyleSheet("color: #141413;")
 
     def _show_test_error(self, message: str) -> None:
         """显示测试错误"""
         self._test_btn.setText(message)
-        self._test_btn.setStyleSheet("background-color: #FFB6C1;")
+        self._test_btn.setStyleSheet("background-color: #F5E6E0;")
         self._test_btn.setEnabled(True)
         QTimer.singleShot(3000, self._reset_test_button)
 

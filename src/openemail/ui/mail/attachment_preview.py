@@ -61,11 +61,11 @@ class AttachmentPreviewDialog(QDialog):
 
         name_label = QLabel(self.file_name)
         name_label.setFont(QFont("", 13, QFont.Weight.Bold))
-        name_label.setStyleSheet("color: #cdd6f4;")
+        name_label.setStyleSheet("color: #141413;")
         title_layout.addWidget(name_label)
 
         info_label = QLabel(f"类型: {self.file_type} | 大小: {self._get_file_size()}")
-        info_label.setStyleSheet("font-size: 11px; color: #a6adc8;")
+        info_label.setStyleSheet("font-size: 11px; color: #6C665F;")
         title_layout.addWidget(info_label)
 
         layout.addWidget(title_frame)
@@ -76,7 +76,7 @@ class AttachmentPreviewDialog(QDialog):
         toolbar_frame.setStyleSheet("""
             QFrame {
                 background: #45475a;
-                border: 1px solid #585b70;
+                border: 1px solid #6C665F;
                 border-bottom: none;
                 padding: 8px;
             }
@@ -111,7 +111,7 @@ class AttachmentPreviewDialog(QDialog):
         self.content_widget.setStyleSheet("""
             QFrame {
                 background: #1e1e2e;
-                border: 1px solid #585b70;
+                border: 1px solid #6C665F;
                 border-top: none;
             }
         """)
@@ -139,7 +139,7 @@ class AttachmentPreviewDialog(QDialog):
         self.status_label.setStyleSheet("""
             QLabel {
                 background: #313244;
-                color: #a6adc8;
+                color: #6C665F;
                 padding: 4px 12px;
                 font-size: 11px;
                 border: 1px solid #45475a;
@@ -236,7 +236,7 @@ class AttachmentPreviewDialog(QDialog):
             warning_label = QLabel("⚠️ PDF预览需要PyQt6-WebEngine模块")
             warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             warning_label.setStyleSheet(
-                "font-size: 14px; color: #f38ba8; padding: 20px;"
+                "font-size: 14px; color: #C97850; padding: 20px;"
             )
             self.preview_layout.addWidget(warning_label)
 
@@ -246,7 +246,7 @@ class AttachmentPreviewDialog(QDialog):
                 "pip install PyQt6-WebEngine"
             )
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            info_label.setStyleSheet("color: #a6adc8; padding: 10px;")
+            info_label.setStyleSheet("color: #6C665F; padding: 10px;")
             self.preview_layout.addWidget(info_label)
 
             self.status_label.setText("PDF预览不可用")
@@ -266,9 +266,9 @@ class AttachmentPreviewDialog(QDialog):
             text_edit.setFont(QFont("Monospace", 10))
             text_edit.setStyleSheet("""
                 QTextEdit {
-                    background: #11111b;
-                    color: #cdd6f4;
-                    border: 1px solid #585b70;
+                    background: #141413;
+                    color: #141413;
+                    border: 1px solid #6C665F;
                     border-radius: 4px;
                 }
             """)
@@ -299,7 +299,7 @@ class AttachmentPreviewDialog(QDialog):
         info_label.setStyleSheet("""
             QLabel {
                 font-size: 13px;
-                color: #cdd6f4;
+                color: #141413;
                 line-height: 1.5;
                 padding: 40px;
             }
@@ -317,7 +317,7 @@ class AttachmentPreviewDialog(QDialog):
                     hex_label.setTextFormat(Qt.TextFormat.PlainText)
                     hex_label.setFont(QFont("Monospace", 9))
                     hex_label.setText(hex_text)
-                    hex_label.setStyleSheet("color: #585b70;")
+                    hex_label.setStyleSheet("color: #6C665F;")
 
                     hex_scroll = QScrollArea()
                     hex_scroll.setWidget(hex_label)
@@ -362,7 +362,7 @@ class AttachmentPreviewDialog(QDialog):
         """显示错误信息"""
         error_label = QLabel(f"❌ {message}")
         error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        error_label.setStyleSheet("font-size: 14px; color: #f38ba8; padding: 30px;")
+        error_label.setStyleSheet("font-size: 14px; color: #C97850; padding: 30px;")
         self.preview_layout.addWidget(error_label)
 
     def _open_file(self):

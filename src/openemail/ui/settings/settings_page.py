@@ -29,15 +29,15 @@ from openemail.storage.database import db
 _CATPPUCCIN_BASE = "#1e1e2e"
 _CATPPUCCIN_SURFACE = "#313244"
 _CATPPUCCIN_OVERLAY = "#45475a"
-_CATPPUCCIN_TEXT = "#cdd6f4"
-_CATPPUCCIN_SUBTEXT = "#a6adc8"
-_CATPPUCCIN_BLUE = "#89b4fa"
+_CATPPUCCIN_TEXT = "#141413"
+_CATPPUCCIN_SUBTEXT = "#6C665F"
+_CATPPUCCIN_BLUE = "#7C8A9A"
 _CATPPUCCIN_GREEN = "#a6e3a1"
-_CATPPUCCIN_RED = "#f38ba8"
-_CATPPUCCIN_YELLOW = "#f9e2af"
+_CATPPUCCIN_RED = "#C97850"
+_CATPPUCCIN_YELLOW = "#C97850"
 _CATPPUCCIN_LAVENDER = "#b4befe"
 _CATPPUCCIN_MANTLE = "#181825"
-_CATPPUCCIN_CRUST = "#11111b"
+_CATPPUCCIN_CRUST = "#141413"
 
 _CALDAV_PROVIDERS = {
     "google": "Google",
@@ -357,7 +357,7 @@ class SettingsPageWidget(QWidget):
         about_layout.addWidget(credits_label)
 
         links_label = QLabel(
-            '<a href="https://github.com/anomalyco/openemail" style="color: #89b4fa;">GitHub</a>'
+            '<a href="https://github.com/anomalyco/openemail" style="color: #7C8A9A;">GitHub</a>'
         )
         links_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         links_label.setOpenExternalLinks(True)
@@ -700,7 +700,7 @@ class SettingsPageWidget(QWidget):
                 min-height: 28px;
             }}
             QPushButton[class="danger"]:hover {{
-                background-color: #eba0ac;
+                background-color: #7D9174;
             }}
             .settings-value {{
                 color: {_CATPPUCCIN_TEXT};

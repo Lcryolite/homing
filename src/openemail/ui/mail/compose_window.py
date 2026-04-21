@@ -102,12 +102,12 @@ class ComposeWindow(QDialog):
         self._to_field.setStyleSheet("""
             QLineEdit {
                 background: #1e1e2e;
-                border: 1px solid #585b70;
+                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
             }
             QLineEdit:focus {
-                border-color: #89b4fa;
+                border-color: #7C8A9A;
             }
         """)
         to_row.addWidget(to_label)
@@ -123,12 +123,12 @@ class ComposeWindow(QDialog):
         self._cc_field.setStyleSheet("""
             QLineEdit {
                 background: #1e1e2e;
-                border: 1px solid #585b70;
+                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
             }
             QLineEdit:focus {
-                border-color: #89b4fa;
+                border-color: #7C8A9A;
             }
         """)
         cc_row.addWidget(cc_label)
@@ -144,13 +144,13 @@ class ComposeWindow(QDialog):
         self._subject_field.setStyleSheet("""
             QLineEdit {
                 background: #1e1e2e;
-                border: 1px solid #585b70;
+                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
                 font-size: 14px;
             }
             QLineEdit:focus {
-                border-color: #89b4fa;
+                border-color: #7C8A9A;
             }
         """)
         subject_row.addWidget(subject_label)
@@ -176,7 +176,7 @@ class ComposeWindow(QDialog):
         self._body_edit.setStyleSheet("""
             QTextEdit {
                 background: #1e1e2e;
-                color: #cdd6f4;
+                color: #141413;
                 border: none;
                 font-family: sans-serif;
                 font-size: 13px;
@@ -703,7 +703,7 @@ class ComposeWindow(QDialog):
             html_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         )
         # 包裹在基本HTML结构中
-        return f"<div style='font-family: sans-serif; font-size: 13px; line-height: 1.5; color: #cdd6f4;'>{html_text}</div>"
+        return f"<div style='font-family: sans-serif; font-size: 13px; line-height: 1.5; color: #141413;'>{html_text}</div>"
 
     def _get_html_content_for_sending(self) -> str:
         """获取HTML格式内容用于发送"""
