@@ -89,13 +89,15 @@ QSplitter::handle:vertical {
 }
 
 /* --- Buttons --- */
+/* Default (secondary): outlined, light bg */
 QPushButton {
     background-color: #FBF8F3;
     color: #141413;
     border: 1px solid #E8E1D8;
-    border-radius: 6px;
-    padding: 6px 16px;
-    min-height: 20px;
+    border-radius: 10px;
+    padding: 8px 20px;
+    min-height: 36px;
+    font-size: 13px;
 }
 
 QPushButton:hover {
@@ -110,12 +112,17 @@ QPushButton:pressed {
 QPushButton:disabled {
     background-color: #FBF8F3;
     color: #6C665F;
+    border-color: #E8E1D8;
 }
 
+/* Primary: filled, single accent color */
 QPushButton[class="primary"] {
     background-color: #C97850;
     color: #FFFFFF;
     border: none;
+    border-radius: 10px;
+    min-height: 38px;
+    font-weight: bold;
 }
 
 QPushButton[class="primary"]:hover {
@@ -126,36 +133,65 @@ QPushButton[class="primary"]:pressed {
     background-color: #B56A42;
 }
 
-QPushButton[class="danger"] {
-    background-color: #7C8A9A;
-    color: #FFFFFF;
+QPushButton[class="primary"]:disabled {
+    background-color: #E8E1D8;
+    color: #6C665F;
+}
+
+/* Text button: no bg, no border, minimal */
+QPushButton[class="text"] {
+    background-color: transparent;
+    color: #C97850;
     border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    min-height: 30px;
+}
+
+QPushButton[class="text"]:hover {
+    background-color: rgba(201, 120, 80, 0.08);
+}
+
+QPushButton[class="text"]:pressed {
+    background-color: rgba(201, 120, 80, 0.15);
+}
+
+/* Danger: secondary accent */
+QPushButton[class="danger"] {
+    background-color: transparent;
+    color: #7C8A9A;
+    border: 1px solid #7C8A9A;
+    border-radius: 10px;
+    min-height: 36px;
 }
 
 QPushButton[class="danger"]:hover {
-    background-color: #6A7888;
+    background-color: rgba(124, 138, 154, 0.1);
 }
 
-/* --- Inputs --- */
+/* --- Search / Inputs --- */
 QLineEdit {
     background-color: #FBF8F3;
     color: #141413;
     border: 1px solid #E8E1D8;
-    border-radius: 6px;
-    padding: 6px 10px;
-    min-height: 20px;
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-height: 36px;
+    font-size: 13px;
 }
 
 QLineEdit:focus {
     border-color: #C97850;
+    background-color: #FFFFFF;
 }
 
 QTextEdit {
     background-color: #FBF8F3;
     color: #141413;
     border: 1px solid #E8E1D8;
-    border-radius: 6px;
-    padding: 6px;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
 }
 
 QTextEdit:focus {
@@ -166,9 +202,10 @@ QComboBox {
     background-color: #FBF8F3;
     color: #141413;
     border: 1px solid #E8E1D8;
-    border-radius: 6px;
-    padding: 6px 10px;
-    min-height: 20px;
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-height: 36px;
+    font-size: 13px;
 }
 
 QComboBox:hover {
@@ -589,4 +626,109 @@ QLabel[class="priority-normal"] {
 
 QLabel[class="priority-low"] {
     color: #6C665F;
+}
+
+/* === Mail List Card Density === */
+/* Comfortable mode: 64-72px height */
+QFrame[class="mail-card-comfortable"] {
+    background-color: #FBF8F3;
+    border: 1px solid #E8E1D8;
+    border-radius: 10px;
+    min-height: 64px;
+    max-height: 72px;
+    padding: 10px 14px;
+}
+
+QFrame[class="mail-card-comfortable"]:hover {
+    border-color: #C97850;
+    background-color: #FFFFFF;
+}
+
+QFrame[class="mail-card-comfortable"][selected="true"] {
+    background-color: rgba(201, 120, 80, 0.06);
+    border-color: #C97850;
+}
+
+/* Compact mode: 52-56px height */
+QFrame[class="mail-card-compact"] {
+    background-color: #FBF8F3;
+    border: 1px solid #E8E1D8;
+    border-radius: 8px;
+    min-height: 52px;
+    max-height: 56px;
+    padding: 6px 12px;
+}
+
+QFrame[class="mail-card-compact"]:hover {
+    border-color: #C97850;
+    background-color: #FFFFFF;
+}
+
+QFrame[class="mail-card-compact"][selected="true"] {
+    background-color: rgba(201, 120, 80, 0.06);
+    border-color: #C97850;
+}
+
+/* === Search Bar === */
+QFrame[class="search-bar"] {
+    background-color: #FBF8F3;
+    border: 1px solid #E8E1D8;
+    border-radius: 10px;
+    min-height: 38px;
+    padding: 0 4px 0 12px;
+}
+
+QFrame[class="search-bar"]:focus-within {
+    border-color: #C97850;
+    background-color: #FFFFFF;
+}
+
+QFrame[class="search-bar"] QLineEdit {
+    border: none;
+    background: transparent;
+    min-height: 34px;
+    padding: 0 4px;
+}
+
+/* Search clear button */
+QPushButton[class="search-clear"] {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    min-width: 24px;
+    max-width: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    padding: 0;
+    color: #6C665F;
+}
+
+QPushButton[class="search-clear"]:hover {
+    background-color: #E8E1D8;
+    color: #141413;
+}
+
+/* === Tag / Chip === */
+QLabel[class="tag"] {
+    background-color: rgba(201, 120, 80, 0.1);
+    color: #B56A42;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 11px;
+}
+
+QLabel[class="tag-green"] {
+    background-color: rgba(125, 145, 116, 0.12);
+    color: #5C6E55;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 11px;
+}
+
+QLabel[class="tag-blue"] {
+    background-color: rgba(124, 138, 154, 0.12);
+    color: #5A6A78;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 11px;
 }
