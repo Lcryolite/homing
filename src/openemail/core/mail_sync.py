@@ -102,8 +102,10 @@ class SyncWorker(QThread):
 
         try:
             folders = Folder.get_by_account(account.id)
+            logger.info("数据库中找到 %d 个文件夹", len(folders))
             if not folders:
                 remote_folders = await client.list_folders()
+                logger.info("远程发现 %d 个文件夹", len(remote_folders))
                 Folder.discover_system_folders(account.id, remote_folders)
                 for rf in remote_folders:
                     name = rf["name"]
@@ -126,15 +128,17 @@ class SyncWorker(QThread):
                 if not self._running:
                     break
                 try:
+                    logger.info("同步文件夹: %s (id=%d)", folder.name, folder.id)
                     count = await client.sync_folder(folder.name, folder.id)
                     total += count
+                    logger.info("文件夹 %s 同步完成: %d 封新邮件", folder.name, count)
                     if count > 0:
                         folder.update_unread()
                         self.folder_updated.emit(
                             account.id, folder.name, folder.unread_count
                         )
                 except Exception as e:
-                    logger.debug("Suppressed exception in %s: %s", __name__, e)
+                    logger.warning("文件夹 %s 同步失败: %s", folder.name, e)
 
             return total
         finally:

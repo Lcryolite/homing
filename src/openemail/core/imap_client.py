@@ -281,14 +281,18 @@ class IMAPClient:
         # Use UID SEARCH so we compare UIDs with UIDs, not sequence numbers
         _, data = await self._client.uid("search", None, "ALL")
         if not data or not data[0]:
+            logger.debug("sync_folder %s: UID search returned no data", folder_name)
             return 0
 
         uid_bytes = data[0]
         if isinstance(uid_bytes, bytes):
             all_uids = uid_bytes.split()
+        elif isinstance(uid_bytes, str):
+            all_uids = uid_bytes.encode().split()
         else:
             all_uids = []
         if not all_uids:
+            logger.debug("sync_folder %s: no UIDs after parsing", folder_name)
             return 0
 
         uid_strings = [u.decode() if isinstance(u, bytes) else str(u) for u in all_uids]
