@@ -77,8 +77,6 @@ class ComposeWindow(QDialog):
         self._from_field.setReadOnly(True)
         self._from_field.setStyleSheet("""
             QLineEdit {
-                background: #FBF8F3;
-                border: 1px solid #E8E1D8;
                 border-radius: 4px;
                 padding: 6px 8px;
             }
@@ -95,8 +93,6 @@ class ComposeWindow(QDialog):
         self._to_field.setPlaceholderText("输入收件人地址，多个用逗号分隔")
         self._to_field.setStyleSheet("""
             QLineEdit {
-                background: #F7F4EE;
-                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
             }
@@ -116,8 +112,6 @@ class ComposeWindow(QDialog):
         self._cc_field.setPlaceholderText("抄送地址，多个用逗号分隔")
         self._cc_field.setStyleSheet("""
             QLineEdit {
-                background: #F7F4EE;
-                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
             }
@@ -137,8 +131,6 @@ class ComposeWindow(QDialog):
         self._subject_field.setPlaceholderText("邮件主题")
         self._subject_field.setStyleSheet("""
             QLineEdit {
-                background: #F7F4EE;
-                border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
                 font-size: 14px;
@@ -169,8 +161,6 @@ class ComposeWindow(QDialog):
         self._body_edit.setAcceptRichText(False)
         self._body_edit.setStyleSheet("""
             QTextEdit {
-                background: #F7F4EE;
-                color: #141413;
                 border: none;
                 font-family: sans-serif;
                 font-size: 13px;
@@ -208,7 +198,6 @@ class ComposeWindow(QDialog):
         self.attachment_manager.max_size_reached.connect(self._on_max_size_reached)
         self.attachment_manager.setStyleSheet("""
             AttachmentManager {
-                background: #FBF8F3;
                 border-top: 1px solid #E8E1D8;
             }
         """)
@@ -225,9 +214,7 @@ class ComposeWindow(QDialog):
         bottom_buttons.setFrameStyle(QFrame.Shape.Box)
         bottom_buttons.setStyleSheet("""
             QFrame {
-                background: #FBF8F3;
-                border: 1px solid #E8E1D8;
-                border-top: none;
+                border-top: 1px solid #E8E1D8;
                 padding: 0;
             }
         """)
@@ -240,22 +227,22 @@ class ComposeWindow(QDialog):
         format_layout.setSpacing(6)
 
         self.bold_btn = QPushButton("粗体")
-        self.bold_btn.setFixedSize(60, 28)
+        self.bold_btn.setFixedSize(75, 28)
         self.bold_btn.clicked.connect(self._on_bold)
         self.italic_btn = QPushButton("斜体")
-        self.italic_btn.setFixedSize(60, 28)
+        self.italic_btn.setFixedSize(75, 28)
         self.italic_btn.clicked.connect(self._on_italic)
         self.underline_btn = QPushButton("下划线")
-        self.underline_btn.setFixedSize(60, 28)
+        self.underline_btn.setFixedSize(75, 28)
         self.underline_btn.clicked.connect(self._on_underline)
         self.bullet_list_btn = QPushButton("• 列表")
-        self.bullet_list_btn.setFixedSize(60, 28)
+        self.bullet_list_btn.setFixedSize(75, 28)
         self.bullet_list_btn.clicked.connect(self._on_bullet_list)
         self.font_color_btn = QPushButton("颜色")
-        self.font_color_btn.setFixedSize(60, 28)
+        self.font_color_btn.setFixedSize(75, 28)
         self.font_color_btn.clicked.connect(self._on_font_color)
         self.font_size_combo = QPushButton("大小")
-        self.font_size_combo.setFixedSize(60, 28)
+        self.font_size_combo.setFixedSize(75, 28)
         self.font_size_combo.setMenu(self._create_font_size_menu())
 
         format_layout.addWidget(self.bold_btn)
