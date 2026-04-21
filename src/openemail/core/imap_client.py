@@ -8,6 +8,8 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime, parseaddr
 from typing import Any
 
+from openemail.core.auth import AuthError, ensure_auth
+
 logger = logging.getLogger(__name__)
 
 # Conditional import for aioimaplib
@@ -158,6 +160,12 @@ class IMAPClient:
         self._idle_event = asyncio.Event()
 
     async def connect(self) -> bool:
+        # Ensure credentials are valid before connecting (refresh OAuth token, etc.)
+        try:
+            ensure_auth(self._account)
+        except AuthError:
+            raise  # Let callers handle auth-specific errors with clear codes
+
         try:
             if AIOIMAPLIB_AVAILABLE:
                 if self._account.ssl_mode == "ssl":
