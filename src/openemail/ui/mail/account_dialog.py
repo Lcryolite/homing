@@ -66,7 +66,7 @@ class AccountDialog(QDialog):
 
         # 状态显示标签
         self._status_label = QLabel("状态: 未验证")
-        self._status_label.setStyleSheet("color: #6C665F;")
+        self._status_label.setStyleSheet("")
         layout.addWidget(self._status_label)
 
         from openemail.models.account import _PROVIDER_STATUS_LABELS
@@ -162,7 +162,7 @@ class AccountDialog(QDialog):
         oauth_layout = QGridLayout(oauth_group)
 
         self._oauth_status_label = QLabel("状态: 未配置OAuth")
-        self._oauth_status_label.setStyleSheet("color: #6C665F;")
+        self._oauth_status_label.setStyleSheet("")
         oauth_layout.addWidget(self._oauth_status_label, 0, 0, 1, 2)
 
         self._authorize_btn = QPushButton("授权")
@@ -355,7 +355,7 @@ class AccountDialog(QDialog):
 
         if auth_type != "oauth2":
             self._oauth_status_label.setText("状态: OAuth未启用")
-            self._oauth_status_label.setStyleSheet("color: #6C665F;")
+            self._oauth_status_label.setStyleSheet("")
             self._authorize_btn.setEnabled(False)
             self._refresh_btn.setEnabled(False)
             return
@@ -1139,9 +1139,9 @@ class AccountDialog(QDialog):
         elif "验证中" in status_text:
             self._status_label.setStyleSheet("color: #C97850; font-weight: bold;")
         elif "未验证" in status_text or "需要重新验证" in status_text:
-            self._status_label.setStyleSheet("color: #6C665F;")
+            self._status_label.setStyleSheet("")
         else:
-            self._status_label.setStyleSheet("color: #141413;")
+            self._status_label.setStyleSheet("")
 
     def _show_test_error(self, message: str) -> None:
         """显示测试错误"""

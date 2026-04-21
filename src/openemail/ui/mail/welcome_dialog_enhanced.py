@@ -78,7 +78,7 @@ class WelcomeDialogEnhanced(QDialog):
 
         subtitle = QLabel("轻松设置您的邮箱账户")
         subtitle.setFont(QFont("", 11))
-        subtitle.setStyleSheet("color: #6C665F;")
+        subtitle.setStyleSheet("")
         title_layout.addWidget(subtitle)
 
         layout.addWidget(title_widget)
@@ -157,8 +157,8 @@ class WelcomeDialogEnhanced(QDialog):
         features_frame.setFrameStyle(QFrame.Shape.Box)
         features_frame.setStyleSheet("""
             QFrame {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
                 padding: 16px;
             }
@@ -177,14 +177,14 @@ class WelcomeDialogEnhanced(QDialog):
         for feature in features:
             feature_label = QLabel(f"• {feature}")
             feature_label.setWordWrap(True)
-            feature_label.setStyleSheet("font-size: 13px; color: #141413;")
+            feature_label.setStyleSheet("font-size: 13px; ")
             features_layout.addWidget(feature_label)
 
         layout.addWidget(features_frame)
 
         # 提示信息
         tip_label = QLabel("💡 只需几分钟，即可完成初始设置并开始使用。")
-        tip_label.setStyleSheet("font-size: 12px; color: #6C665F; font-style: italic;")
+        tip_label.setStyleSheet("font-size: 12px; font-style: italic;")
         tip_label.setWordWrap(True)
         layout.addWidget(tip_label)
 
@@ -385,7 +385,7 @@ class WelcomeDialogEnhanced(QDialog):
         )
         congrats_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         congrats_label.setFont(QFont("", 13))
-        congrats_label.setStyleSheet("color: #141413; line-height: 1.5;")
+        congrats_label.setStyleSheet("line-height: 1.5;")
         congrats_label.setWordWrap(True)
         layout.addWidget(congrats_label)
 
@@ -394,8 +394,8 @@ class WelcomeDialogEnhanced(QDialog):
         tips_frame.setFrameStyle(QFrame.Shape.Box)
         tips_frame.setStyleSheet("""
             QFrame {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
                 padding: 16px;
                 margin: 12px 0;

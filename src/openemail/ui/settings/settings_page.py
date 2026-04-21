@@ -26,9 +26,9 @@ from openemail.config import settings
 from openemail.models.account import Account
 from openemail.storage.database import db
 
-_CATPPUCCIN_BASE = "#1e1e2e"
-_CATPPUCCIN_SURFACE = "#313244"
-_CATPPUCCIN_OVERLAY = "#45475a"
+_CATPPUCCIN_BASE = "#F7F4EE"
+_CATPPUCCIN_SURFACE = "#FBF8F3"
+_CATPPUCCIN_OVERLAY = "#E8E1D8"
 _CATPPUCCIN_TEXT = "#141413"
 _CATPPUCCIN_SUBTEXT = "#6C665F"
 _CATPPUCCIN_BLUE = "#7C8A9A"

@@ -83,8 +83,8 @@ class ComposeWindow(QDialog):
         self._from_field.setReadOnly(True)
         self._from_field.setStyleSheet("""
             QLineEdit {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-radius: 4px;
                 padding: 6px 8px;
             }
@@ -101,7 +101,7 @@ class ComposeWindow(QDialog):
         self._to_field.setPlaceholderText("输入收件人地址，多个用逗号分隔")
         self._to_field.setStyleSheet("""
             QLineEdit {
-                background: #1e1e2e;
+                background: #F7F4EE;
                 border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
@@ -122,7 +122,7 @@ class ComposeWindow(QDialog):
         self._cc_field.setPlaceholderText("抄送地址，多个用逗号分隔")
         self._cc_field.setStyleSheet("""
             QLineEdit {
-                background: #1e1e2e;
+                background: #F7F4EE;
                 border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
@@ -143,7 +143,7 @@ class ComposeWindow(QDialog):
         self._subject_field.setPlaceholderText("邮件主题")
         self._subject_field.setStyleSheet("""
             QLineEdit {
-                background: #1e1e2e;
+                background: #F7F4EE;
                 border: 1px solid #6C665F;
                 border-radius: 4px;
                 padding: 6px 8px;
@@ -175,7 +175,7 @@ class ComposeWindow(QDialog):
         self._body_edit.setAcceptRichText(False)
         self._body_edit.setStyleSheet("""
             QTextEdit {
-                background: #1e1e2e;
+                background: #F7F4EE;
                 color: #141413;
                 border: none;
                 font-family: sans-serif;
@@ -214,8 +214,8 @@ class ComposeWindow(QDialog):
         self.attachment_manager.max_size_reached.connect(self._on_max_size_reached)
         self.attachment_manager.setStyleSheet("""
             AttachmentManager {
-                background: #313244;
-                border-top: 1px solid #45475a;
+                background: #FBF8F3;
+                border-top: 1px solid #E8E1D8;
             }
         """)
         bottom_layout.addWidget(self.attachment_manager)
@@ -231,8 +231,8 @@ class ComposeWindow(QDialog):
         bottom_buttons.setFrameStyle(QFrame.Shape.Box)
         bottom_buttons.setStyleSheet("""
             QFrame {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-top: none;
                 padding: 0;
             }

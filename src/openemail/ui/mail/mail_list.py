@@ -51,7 +51,7 @@ class MailItemWidget(QWidget):
         top_row.addStretch()
 
         date_label = QLabel(email.display_date)
-        date_label.setStyleSheet("color: #6C665F; font-size: 11px;")
+        date_label.setStyleSheet("font-size: 11px;")
         top_row.addWidget(date_label)
 
         if email.is_flagged:
@@ -73,7 +73,7 @@ class MailItemWidget(QWidget):
         left.addWidget(subject_label)
 
         preview_label = QLabel(email.preview_text)
-        preview_label.setStyleSheet("color: #6C665F; font-size: 11px;")
+        preview_label.setStyleSheet("font-size: 11px;")
         preview_label.setWordWrap(False)
         left.addWidget(preview_label)
 

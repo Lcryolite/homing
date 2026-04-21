@@ -162,7 +162,7 @@ class ContactListWidget(QWidget):
         # 状态栏
         self.status_label = QLabel("就绪")
         self.status_label.setStyleSheet(
-            "padding: 4px 8px; color: #6C665F; background: #313244; font-size: 11px;"
+            "padding: 4px 8px; color: #6C665F; background: #FBF8F3; font-size: 11px;"
         )
         layout.addWidget(self.status_label)
 

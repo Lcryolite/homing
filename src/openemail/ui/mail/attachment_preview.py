@@ -50,8 +50,8 @@ class AttachmentPreviewDialog(QDialog):
         title_frame.setFrameStyle(QFrame.Shape.Box)
         title_frame.setStyleSheet("""
             QFrame {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-bottom: none;
                 padding: 12px;
             }
@@ -61,11 +61,11 @@ class AttachmentPreviewDialog(QDialog):
 
         name_label = QLabel(self.file_name)
         name_label.setFont(QFont("", 13, QFont.Weight.Bold))
-        name_label.setStyleSheet("color: #141413;")
+        name_label.setStyleSheet("")
         title_layout.addWidget(name_label)
 
         info_label = QLabel(f"类型: {self.file_type} | 大小: {self._get_file_size()}")
-        info_label.setStyleSheet("font-size: 11px; color: #6C665F;")
+        info_label.setStyleSheet("font-size: 11px; ")
         title_layout.addWidget(info_label)
 
         layout.addWidget(title_frame)
@@ -75,7 +75,7 @@ class AttachmentPreviewDialog(QDialog):
         toolbar_frame.setFrameStyle(QFrame.Shape.Box)
         toolbar_frame.setStyleSheet("""
             QFrame {
-                background: #45475a;
+                background: #E8E1D8;
                 border: 1px solid #6C665F;
                 border-bottom: none;
                 padding: 8px;
@@ -110,7 +110,7 @@ class AttachmentPreviewDialog(QDialog):
         self.content_widget.setFrameStyle(QFrame.Shape.Box)
         self.content_widget.setStyleSheet("""
             QFrame {
-                background: #1e1e2e;
+                background: #F7F4EE;
                 border: 1px solid #6C665F;
                 border-top: none;
             }
@@ -138,11 +138,11 @@ class AttachmentPreviewDialog(QDialog):
         self.status_label = QLabel("就绪")
         self.status_label.setStyleSheet("""
             QLabel {
-                background: #313244;
+                background: #FBF8F3;
                 color: #6C665F;
                 padding: 4px 12px;
                 font-size: 11px;
-                border: 1px solid #45475a;
+                border: 1px solid #E8E1D8;
                 border-top: none;
             }
         """)
@@ -246,7 +246,7 @@ class AttachmentPreviewDialog(QDialog):
                 "pip install PyQt6-WebEngine"
             )
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            info_label.setStyleSheet("color: #6C665F; padding: 10px;")
+            info_label.setStyleSheet("padding: 10px;")
             self.preview_layout.addWidget(info_label)
 
             self.status_label.setText("PDF预览不可用")
@@ -317,7 +317,7 @@ class AttachmentPreviewDialog(QDialog):
                     hex_label.setTextFormat(Qt.TextFormat.PlainText)
                     hex_label.setFont(QFont("Monospace", 9))
                     hex_label.setText(hex_text)
-                    hex_label.setStyleSheet("color: #6C665F;")
+                    hex_label.setStyleSheet("")
 
                     hex_scroll = QScrollArea()
                     hex_scroll.setWidget(hex_label)

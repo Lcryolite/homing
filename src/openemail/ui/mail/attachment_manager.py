@@ -62,14 +62,14 @@ class AttachmentItem(QFrame):
         self.setFrameStyle(QFrame.Shape.Box)
         self.setStyleSheet("""
             AttachmentItem {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
                 padding: 8px;
                 margin: 2px;
             }
             AttachmentItem:hover {
-                background: #45475a;
+                background: #E8E1D8;
                 border-color: #6C665F;
             }
         """)
@@ -101,7 +101,7 @@ class AttachmentItem(QFrame):
         file_layout.addWidget(name_label)
 
         info_label = QLabel(f"{self.file_size} • {self.file_type.split('/')[0]}")
-        info_label.setStyleSheet("font-size: 11px; color: #6C665F;")
+        info_label.setStyleSheet("font-size: 11px; ")
         file_layout.addWidget(info_label)
 
         layout.addLayout(file_layout)
@@ -194,7 +194,7 @@ class AttachmentManager(QWidget):
         title_layout.addWidget(title_label)
 
         self.status_label = QLabel("0个文件 (0 B)")
-        self.status_label.setStyleSheet("font-size: 11px; color: #6C665F;")
+        self.status_label.setStyleSheet("font-size: 11px; ")
         title_layout.addWidget(self.status_label)
 
         title_layout.addStretch()
@@ -212,8 +212,8 @@ class AttachmentManager(QWidget):
         self.scroll_area.setFrameStyle(QFrame.Shape.NoFrame)
         self.scroll_area.setStyleSheet("""
             QScrollArea {
-                background: #1e1e2e;
-                border: 1px solid #45475a;
+                background: #F7F4EE;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
             }
             QScrollArea > QWidget > QWidget {
@@ -235,7 +235,7 @@ class AttachmentManager(QWidget):
         self.help_label.setStyleSheet("""
             font-size: 11px;
             color: #6C665F;
-            background: #313244;
+            background: #FBF8F3;
             padding: 8px;
             border-radius: 4px;
         """)
@@ -443,7 +443,7 @@ class AttachmentManager(QWidget):
                 "font-size: 11px; color: #C97850; font-weight: bold;"
             )
         else:
-            self.status_label.setStyleSheet("font-size: 11px; color: #6C665F;")
+            self.status_label.setStyleSheet("font-size: 11px; ")
 
     def get_attachment_paths(self) -> List[str]:
         """获取所有附件路径"""

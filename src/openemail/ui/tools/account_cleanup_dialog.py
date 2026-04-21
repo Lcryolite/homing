@@ -73,9 +73,9 @@ class AccountCleanupDialog(QDialog):
             label.setStyleSheet("""
                 font-size: 12px;
                 padding: 4px 8px;
-                background: #313244;
+                background: #FBF8F3;
                 border-radius: 4px;
-                border: 1px solid #45475a;
+                border: 1px solid #E8E1D8;
             """)
             stats_layout.addWidget(label)
 
@@ -99,7 +99,7 @@ class AccountCleanupDialog(QDialog):
         self._cleanup_btn.setStyleSheet("""
             QPushButton {
                 background: #C97850;
-                color: #1e1e2e;
+                color: #F7F4EE;
                 font-weight: bold;
             }
         """)
@@ -123,8 +123,8 @@ class AccountCleanupDialog(QDialog):
         self._status_text.setMaximumHeight(100)
         self._status_text.setStyleSheet("""
             QTextEdit {
-                background: #1e1e2e;
-                border: 1px solid #45475a;
+                background: #F7F4EE;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
                 padding: 8px;
                 font-family: monospace;
@@ -165,13 +165,13 @@ class AccountCleanupDialog(QDialog):
 
         self._account_table.setStyleSheet("""
             QTableWidget {
-                background: #1e1e2e;
-                border: 1px solid #45475a;
+                background: #F7F4EE;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
-                gridline-color: #45475a;
+                gridline-color: #E8E1D8;
             }
             QHeaderView::section {
-                background: #313244;
+                background: #FBF8F3;
                 color: #141413;
                 border: none;
                 padding: 6px 8px;
@@ -179,7 +179,7 @@ class AccountCleanupDialog(QDialog):
             }
             QTableWidget::item {
                 padding: 6px 8px;
-                border-bottom: 1px solid #45475a;
+                border-bottom: 1px solid #E8E1D8;
             }
         """)
         layout.addWidget(self._account_table, 1)

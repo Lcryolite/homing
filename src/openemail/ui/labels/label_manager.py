@@ -64,7 +64,7 @@ class LabelColorWidget(QPushButton):
         self.setStyleSheet(f"""
             QPushButton {{
                 background-color: {self._color};
-                border: 2px solid #45475a;
+                border: 2px solid #E8E1D8;
                 border-radius: 6px;
             }}
             QPushButton:hover {{
@@ -137,15 +137,15 @@ class LabelTreeWidget(QTreeWidget):
         self.setStyleSheet("""
             QTreeWidget {
                 background-color: transparent;
-                border: 1px solid #45475a;
+                border: 1px solid #E8E1D8;
                 border-radius: 4px;
             }
             QTreeWidget::item {
                 padding: 6px;
-                border-bottom: 1px solid #313244;
+                border-bottom: 1px solid #FBF8F3;
             }
             QTreeWidget::item:selected {
-                background-color: #45475a;
+                background-color: #E8E1D8;
             }
             QTreeWidget::item:hover {
                 background-color: #6C665F;
@@ -240,7 +240,7 @@ class LabelTreeWidget(QTreeWidget):
 
         # 绘制颜色圆
         painter.setBrush(QColor(color))
-        painter.setPen(QPen(QColor("#45475a"), 1))
+        painter.setPen(QPen(QColor("#E8E1D8"), 1))
         painter.drawEllipse(0, 0, 15, 15)
 
         painter.end()
@@ -675,7 +675,7 @@ class LabelManager(QWidget):
         # 占位符文本
         self.placeholder_label = QLabel("选择标签查看详情")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #6C665F; font-style: italic;")
+        self.placeholder_label.setStyleSheet("font-style: italic;")
         self.detail_layout.addWidget(self.placeholder_label)
 
         right_layout.addWidget(self.detail_widget, 1)
@@ -751,7 +751,7 @@ class LabelManager(QWidget):
         color_label = QLabel()
         color_label.setFixedSize(20, 20)
         color_label.setStyleSheet(
-            f"background-color: {label.color}; border: 1px solid #45475a; border-radius: 3px;"
+            f"background-color: {label.color}; border: 1px solid #E8E1D8; border-radius: 3px;"
         )
         form.addRow("颜色:", color_label)
 

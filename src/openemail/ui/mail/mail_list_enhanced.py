@@ -88,7 +88,7 @@ class EnhancedMailItemWidget(QWidget):
         sender_time_layout.addStretch()
 
         date_label = QLabel(email.display_date)
-        date_label.setStyleSheet("color: #6C665F; font-size: 11px;")
+        date_label.setStyleSheet("font-size: 11px;")
         sender_time_layout.addWidget(date_label)
 
         info_layout.addLayout(sender_time_layout)
@@ -105,7 +105,7 @@ class EnhancedMailItemWidget(QWidget):
         # 预览文本
         if email.preview_text:
             preview_label = QLabel(email.preview_text)
-            preview_label.setStyleSheet("color: #6C665F; font-size: 11px;")
+            preview_label.setStyleSheet("font-size: 11px;")
             preview_label.setWordWrap(False)
             info_layout.addWidget(preview_label)
 
@@ -148,7 +148,7 @@ class EnhancedMailItemWidget(QWidget):
         # 附件图标
         if email.has_attachment:
             att_label = QLabel("📎")
-            att_label.setStyleSheet("font-size: 12px; color: #6C665F;")
+            att_label.setStyleSheet("font-size: 12px; ")
             att_label.setToolTip("有附件")
             icon_layout.addWidget(att_label)
 
@@ -224,11 +224,11 @@ class EnhancedMailItemWidget(QWidget):
         elif not self._email.is_read:
             self.setStyleSheet("""
                 EnhancedMailItemWidget {
-                    background: #313244;
+                    background: #FBF8F3;
                     border-left: 4px solid transparent;
                 }
                 EnhancedMailItemWidget:hover {
-                    background: #45475a;
+                    background: #E8E1D8;
                 }
             """)
         else:
@@ -238,7 +238,7 @@ class EnhancedMailItemWidget(QWidget):
                     border-left: 4px solid transparent;
                 }
                 EnhancedMailItemWidget:hover {
-                    background: #313244;
+                    background: #FBF8F3;
                 }
             """)
 
@@ -304,8 +304,8 @@ class BatchActionToolbar(QToolBar):
         self.setFloatable(False)
         self.setStyleSheet("""
             QToolBar {
-                background: #313244;
-                border: 1px solid #45475a;
+                background: #FBF8F3;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
                 padding: 4px;
                 spacing: 8px;
@@ -316,7 +316,7 @@ class BatchActionToolbar(QToolBar):
                 font-size: 12px;
             }
             QToolButton:hover {
-                background: #45475a;
+                background: #E8E1D8;
             }
             QToolButton:disabled {
                 color: #6C665F;
@@ -502,9 +502,9 @@ class EnhancedMailListWidget(QWidget):
                 font-size: 16px;
                 font-weight: bold;
                 padding: 12px 16px;
-                background: #313244;
+                background: #FBF8F3;
                 border-radius: 6px 6px 0 0;
-                border-bottom: 1px solid #45475a;
+                border-bottom: 1px solid #E8E1D8;
             }
         """)
         layout.addWidget(self._header)
@@ -527,12 +527,12 @@ class EnhancedMailListWidget(QWidget):
         self._list_widget.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self._list_widget.setStyleSheet("""
             QListWidget {
-                background: #1e1e2e;
+                background: #F7F4EE;
                 border: none;
                 outline: none;
             }
             QListWidget::item {
-                border-bottom: 1px solid #313244;
+                border-bottom: 1px solid #FBF8F3;
             }
             QListWidget::item:selected {
                 background: transparent;
@@ -545,9 +545,9 @@ class EnhancedMailListWidget(QWidget):
         self._status_bar = QFrame()
         self._status_bar.setStyleSheet("""
             QFrame {
-                background: #313244;
+                background: #FBF8F3;
                 border: none;
-                border-top: 1px solid #45475a;
+                border-top: 1px solid #E8E1D8;
                 padding: 8px 16px;
             }
         """)
@@ -555,7 +555,7 @@ class EnhancedMailListWidget(QWidget):
         status_layout.setContentsMargins(0, 0, 0, 0)
 
         self._status_label = QLabel("就绪")
-        self._status_label.setStyleSheet("color: #6C665F; font-size: 11px;")
+        self._status_label.setStyleSheet("font-size: 11px;")
         status_layout.addWidget(self._status_label)
 
         status_layout.addStretch()

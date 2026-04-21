@@ -58,8 +58,8 @@ class ContactEditorDialog(QDialog):
         avatar_frame.setFrameStyle(QFrame.Shape.Box)
         avatar_frame.setStyleSheet("""
             QFrame {
-                background: #313244;
-                border: 2px solid #45475a;
+                background: #FBF8F3;
+                border: 2px solid #E8E1D8;
                 border-radius: 8px;
                 padding: 20px;
             }
@@ -107,7 +107,7 @@ class ContactEditorDialog(QDialog):
             QGroupBox {
                 font-weight: bold;
                 font-size: 14px;
-                border: 1px solid #45475a;
+                border: 1px solid #E8E1D8;
                 border-radius: 6px;
                 margin-top: 12px;
                 padding-top: 10px;

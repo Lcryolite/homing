@@ -37,7 +37,7 @@ class WelcomeDialog(QDialog):
         layout.addWidget(title)
 
         subtitle = QLabel("添加您的第一个邮箱账户")
-        subtitle.setStyleSheet("font-size: 14px; color: #6C665F;")
+        subtitle.setStyleSheet("font-size: 14px; ")
         layout.addWidget(subtitle)
 
         # 服务商选择
@@ -67,7 +67,7 @@ class WelcomeDialog(QDialog):
 
         # 提示信息
         tip_label = QLabel("💡 提示：QQ/163 等邮箱需要使用授权码而非登录密码")
-        tip_label.setStyleSheet("font-size: 12px; color: #6C665F;")
+        tip_label.setStyleSheet("font-size: 12px; ")
         tip_label.setWordWrap(True)
         layout.addWidget(tip_label)
 

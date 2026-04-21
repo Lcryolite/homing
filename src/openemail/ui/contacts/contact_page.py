@@ -38,9 +38,9 @@ class ContactPageWidget(QWidget):
                 font-size: 16px;
                 font-weight: bold;
                 padding: 12px 16px;
-                background: #313244;
+                background: #FBF8F3;
                 border-radius: 6px 6px 0 0;
-                border-bottom: 1px solid #45475a;
+                border-bottom: 1px solid #E8E1D8;
             }
         """)
         layout.addWidget(self.title_label)

@@ -222,9 +222,9 @@ class LabelSelector(QWidget):
         self.labels_scroll.setMaximumHeight(150)
         self.labels_scroll.setStyleSheet("""
             QScrollArea {
-                border: 1px solid #45475a;
+                border: 1px solid #E8E1D8;
                 border-radius: 4px;
-                background-color: #1e1e2e;
+                background-color: #F7F4EE;
             }
             QScrollArea > QWidget > QWidget {
                 background-color: transparent;
@@ -240,7 +240,7 @@ class LabelSelector(QWidget):
         # 占位符文本
         self.placeholder_label = QLabel("无标签")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: #6C665F; font-style: italic;")
+        self.placeholder_label.setStyleSheet("font-style: italic;")
         self.labels_layout.addWidget(self.placeholder_label)
 
         self.labels_layout.addStretch()
