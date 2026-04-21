@@ -318,8 +318,8 @@ class IMAPClient:
         return synced
 
     async def _resolve_folder_name(self, folder_name: str) -> str:
-        """将标准文件夹名映射到服务器实际路径，优先使用 PROVIDERS 配置。"""
-        from openemail.models.account import PROVIDERS
+        """将标准文件夹名映射到服务器实际路径，优先使用 PROVIDER_PRESETS 配置。"""
+        from openemail.models.account import PROVIDER_PRESETS
 
         # 标准名称 → 服务器文件夹名（不含前缀）
         standard_map = {
@@ -334,7 +334,7 @@ class IMAPClient:
         prefix = ""
         if self._account.imap_host:
             host_lower = self._account.imap_host.lower()
-            for _key, cfg in PROVIDERS.items():
+            for _key, cfg in PROVIDER_PRESETS.items():
                 if cfg.get("imap_host", "").lower() == host_lower:
                     prefix = cfg.get("folder_prefix", "")
                     break

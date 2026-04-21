@@ -328,7 +328,7 @@ class AccountDialog(QDialog):
         # 更新OAuth状态显示
         self._update_oauth_status()
 
-    def _on_auth_type_changed(self, index: int):
+    def _on_auth_type_changed(self, index: int = 0):
         """认证方式变化处理"""
         auth_type = self._auth_combo.currentData()
         is_oauth = auth_type == "oauth2"
