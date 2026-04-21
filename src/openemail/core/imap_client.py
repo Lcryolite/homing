@@ -270,7 +270,7 @@ class IMAPClient:
         return folders
 
     async def sync_folder(
-        self, folder_name: str, folder_id: int, limit: int = 100
+        self, folder_name: str, folder_id: int, limit: int = 50
     ) -> int:
         if not self._client:
             return 0

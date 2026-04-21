@@ -565,6 +565,7 @@ class MainWindow(QMainWindow):
         self._restore_geometry()
         self._check_first_run()
         self._setup_keyboard_shortcuts()
+        self._setup_auto_sync()
 
     def _check_first_run(self) -> None:
         """检查是否首次启动（使用新的引导状态逻辑）"""
@@ -855,19 +856,6 @@ class MainWindow(QMainWindow):
                 spacing: 6px;
             }
         """)
-
-        self._sync_btn = QPushButton("🔄 同步")
-        self._sync_btn.setToolTip("同步所有账户 (Ctrl+S)")
-        self._sync_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._sync_btn.setStyleSheet("""
-            QPushButton {
-                padding: 6px 14px;
-                border-radius: 6px;
-                font-size: 12px;
-            }
-        """)
-        self._sync_btn.clicked.connect(self._sync_all)
-        self._toolbar.addWidget(self._sync_btn)
 
         self._toolbar.addSeparator()
 
@@ -1409,6 +1397,47 @@ class MainWindow(QMainWindow):
 
         compose.sent.connect(lambda: self._statusbar.showMessage("邮件已发送", 3000))
         compose.exec()
+
+    def _setup_auto_sync(self) -> None:
+        """设置自动同步：连接信号 + 定时器"""
+        from PyQt6.QtCore import QTimer
+        from openemail.core.mail_sync import mail_sync_manager
+
+        # 连接同步完成信号，刷新当前邮件列表
+        mail_sync_manager.sync_finished.connect(self._on_sync_finished)
+        mail_sync_manager.sync_error.connect(self._on_sync_error)
+
+        # 定时自动同步（每 5 分钟）
+        self._auto_sync_timer = QTimer(self)
+        self._auto_sync_timer.timeout.connect(self._auto_sync)
+        self._auto_sync_timer.start(5 * 60 * 1000)  # 5 minutes
+
+    def _auto_sync(self) -> None:
+        """定时触发后台同步（静默，不打扰用户）"""
+        from openemail.core.mail_sync import mail_sync_manager
+
+        # sync_all() 内部已有 isRunning() 防重入
+        mail_sync_manager.sync_all()
+
+    def _on_sync_finished(self, account_id: int, total: int) -> None:
+        """同步完成，刷新当前显示的邮件列表"""
+        if total > 0:
+            logger.info("账户 %d 同步完成，新增 %d 封邮件", account_id, total)
+            self._reload_current_folder()
+        self._statusbar.showMessage("同步完成", 2000)
+
+    def _on_sync_error(self, account_id: int, error_msg: str) -> None:
+        """同步出错，仅日志"""
+        logger.warning("账户 %d 同步出错: %s", account_id, error_msg)
+
+    def _reload_current_folder(self) -> None:
+        """重新加载当前文件夹的邮件列表"""
+        try:
+            if hasattr(self, "_current_account") and hasattr(self, "_current_folder"):
+                if self._current_account and self._current_folder:
+                    self.load_folder(self._current_account, self._current_folder)
+        except Exception:
+            logger.debug("刷新邮件列表时出错", exc_info=True)
 
     def _sync_all(self) -> None:
         from openemail.core.mail_sync import mail_sync_manager
