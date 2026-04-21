@@ -156,7 +156,6 @@ class AccountDialog(QDialog):
         self._auth_combo = QComboBox()
         self._auth_combo.currentIndexChanged.connect(self._on_auth_type_changed)
         form.addRow("认证方式:", self._auth_combo)
-        self._populate_auth_combo()  # initial population with all types
 
         # OAuth状态和授权按钮
         oauth_group = QGroupBox("OAuth2 授权")
@@ -176,11 +175,18 @@ class AccountDialog(QDialog):
         self._refresh_btn.setEnabled(False)
         oauth_layout.addWidget(self._refresh_btn, 1, 1)
 
+        # 第三方登录状态
+        self._third_party_status = QLabel("")
+        oauth_layout.addWidget(self._third_party_status, 2, 0, 1, 2)
+
         layout.addWidget(oauth_group)
         layout.addLayout(form)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
+
+        # Auth combo 必须在 OAuth widget 创建之后再初始化
+        self._populate_auth_combo()
 
         self._test_btn = QPushButton("测试连接")
         self._test_btn.clicked.connect(self._test_connection)
