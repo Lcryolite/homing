@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-import re
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Optional
@@ -109,7 +108,7 @@ class BayesianSpamFilter:
         tokens = Tokenizer.tokenize(text)
         token_counts = Counter(tokens)
 
-        label = "spam" if is_spam else "ham"
+        _label = "spam" if is_spam else "ham"
         for token, count in token_counts.items():
             row = db.fetchone(
                 "SELECT spam_count, ham_count FROM bayes_tokens WHERE token = ?",

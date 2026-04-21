@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 from PyQt6.QtCore import pyqtSignal, QTimer
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -31,8 +30,6 @@ from openemail.core.validation_snapshot import (
 )
 from openemail.models.account import Account, PROVIDER_PRESETS
 from openemail.core.oauth2_new import (
-    OAuthError,
-    OAuthErrorCode,
     get_oauth_error_message,
     OAuthManager,
 )
@@ -463,7 +460,7 @@ class AccountDialog(QDialog):
             self._oauth_status_label.setStyleSheet("color: blue;")
 
             # 对于Microsoft，显示信息对话框而不是实际启动
-            reply = QMessageBox.information(
+            _reply = QMessageBox.information(
                 self,
                 "Outlook OAuth状态",
                 f"Microsoft OAuth实现代码完成，但需要真实Azure AD应用凭据。\n\n"
@@ -542,7 +539,7 @@ class AccountDialog(QDialog):
 
             # 记录到日志
             access_token_preview = tokens.get("access_token", "")[:10]
-            refresh_token_preview = tokens.get("refresh_token", "")[:10]
+            _refresh_token_preview = tokens.get("refresh_token", "")[:10]
             expires_at = tokens.get("expires_at", "")
 
             import logging
@@ -702,10 +699,10 @@ class AccountDialog(QDialog):
                 QMessageBox.warning(
                     self,
                     "检查令牌",
-                    f"⚠️ 令牌刷新失败\n\n"
-                    f"• 刷新令牌无效或已撤销\n"
-                    f"• 账户状态已更新为: 需要重新授权\n\n"
-                    f"请点击'授权'按钮重新获取令牌。",
+                    "⚠️ 令牌刷新失败\n\n"
+                    "• 刷新令牌无效或已撤销\n"
+                    "• 账户状态已更新为: 需要重新授权\n\n"
+                    "请点击'授权'按钮重新获取令牌。",
                 )
         except Exception as e:
             # 刷新过程异常

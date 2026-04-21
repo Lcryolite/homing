@@ -13,13 +13,12 @@ from PyQt6.QtWidgets import (
     QTextEdit,
     QPushButton,
     QFrame,
-    QComboBox,
     QCheckBox,
     QGroupBox,
     QMessageBox,
     QFileDialog,
 )
-from PyQt6.QtGui import QFont, QPixmap, QIcon
+from PyQt6.QtGui import QFont, QPixmap
 
 from openemail.models.contact import Contact
 from openemail.models.account import Account
@@ -350,7 +349,7 @@ class ContactEditorDialog(QDialog):
         # 如果保存成功，创建新的编辑器
         if self.result() == QDialog.DialogCode.Accepted:
             # 创建新的联系人对象
-            new_contact = Contact(
+            _new_contact = Contact(
                 account_id=self._account.id if self._account else None
             )
 

@@ -1,18 +1,13 @@
 from __future__ import annotations
 
 import json
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import List, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QModelIndex, QPoint
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint
 from PyQt6.QtGui import (
     QFont,
     QColor,
-    QBrush,
     QIcon,
-    QAction,
-    QTextCharFormat,
-    QSyntaxHighlighter,
     QPainter,
     QPen,
 )
@@ -24,8 +19,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QComboBox,
-    QSpinBox,
-    QCheckBox,
     QGroupBox,
     QFormLayout,
     QTextEdit,
@@ -33,23 +26,11 @@ from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QMessageBox,
-    QTabWidget,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
-    QDateEdit,
-    QTimeEdit,
-    QApplication,
     QMenu,
     QTreeWidget,
     QTreeWidgetItem,
-    QProgressBar,
-    QFrame,
-    QStackedWidget,
     QColorDialog,
     QInputDialog,
-    QListWidget,
-    QListWidgetItem,
 )
 
 from openemail.models.label import Label, LabelType, LabelVisibility
@@ -214,7 +195,7 @@ class LabelTreeWidget(QTreeWidget):
         item = QTreeWidgetItem(parent)
 
         # 颜色方块
-        color_item = QTreeWidgetItem()
+        _color_item = QTreeWidgetItem()
 
         # 标签名称和计数
         display_text = f"{label.display_name}"
@@ -249,7 +230,7 @@ class LabelTreeWidget(QTreeWidget):
 
     def _create_color_icon(self, color: str) -> QIcon:
         """创建颜色图标"""
-        from PyQt6.QtGui import QPixmap, QPainter
+        from PyQt6.QtGui import QPixmap
 
         pixmap = QPixmap(16, 16)
         pixmap.fill(Qt.GlobalColor.transparent)
@@ -938,7 +919,7 @@ class LabelManager(QWidget):
 
         layout = QVBoxLayout()
 
-        layout.addWidget(QLabel(f"将当前标签合并到:"))
+        layout.addWidget(QLabel("将当前标签合并到:"))
 
         self.merge_target_combo = QComboBox()
         for label in labels:

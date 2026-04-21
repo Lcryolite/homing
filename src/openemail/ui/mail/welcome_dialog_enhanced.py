@@ -4,7 +4,6 @@ import logging
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QDialog,
-    QDialogButtonBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -14,14 +13,13 @@ from PyQt6.QtWidgets import (
     QWidget,
     QComboBox,
     QTabWidget,
-    QScrollArea,
     QFrame,
     QGroupBox,
     QCheckBox,
     QProgressBar,
     QMessageBox,
 )
-from PyQt6.QtGui import QFont, QPixmap, QIcon
+from PyQt6.QtGui import QFont
 
 from openemail.config import settings
 from openemail.core.connection_tester import (
@@ -634,7 +632,7 @@ class WelcomeDialogEnhanced(QDialog):
 
         for result in summary.results:
             protocol = result.protocol.value.upper()
-            success = result.success
+            _success = result.success
             level = getattr(result, "level", "unknown")
             error_msg = result.error_message or ""
 
@@ -873,7 +871,7 @@ class WelcomeDialogEnhanced(QDialog):
         self._finish_state = state
 
         # 获取完成步骤的 widgets
-        finish_widget = self.steps_widget.widget(3)
+        _finish_widget = self.steps_widget.widget(3)
 
         if state == "submitting":
             # 修改按钮文本和样式
@@ -920,7 +918,7 @@ class WelcomeDialogEnhanced(QDialog):
         error_box.addButton("跳过验证", QMessageBox.ButtonRole.ActionRole)
         error_box.addButton("取消", QMessageBox.ButtonRole.RejectRole)
 
-        response = error_box.exec()
+        _response = error_box.exec()
 
         if error_box.clickedButton().text() == "重试":
             # 用户选择重试，重新尝试添加账户

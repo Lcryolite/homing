@@ -1,18 +1,13 @@
 from __future__ import annotations
 
-import json
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Callable
+from typing import Dict, Optional
 import re
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QModelIndex
-from PyQt6.QtGui import QFont, QColor, QBrush, QIcon, QAction
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QTreeWidget,
-    QTreeWidgetItem,
     QPushButton,
     QLabel,
     QLineEdit,
@@ -26,26 +21,19 @@ from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QMessageBox,
-    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
-    QHeaderView,
     QDateEdit,
-    QTimeEdit,
-    QApplication,
     QMenu,
 )
 
 from openemail.filter.enhanced_filter_engine import (
     EnhancedFilterRule,
     EnhancedFilterEngine,
-    init_enhanced_filter_engine,
 )
-from openemail.models.email import Email
 from openemail.models.folder import Folder
 
 from openemail.models.label import Label
-from openemail.models.contact import Contact
 
 
 class ConditionWidget(QWidget):
@@ -141,7 +129,7 @@ class ConditionWidget(QWidget):
         self.operator_combo.clear()
 
         condition_type = self.type_combo.currentText()
-        field = self.field_combo.currentText()
+        _field = self.field_combo.currentText()
 
         operators = []
 
@@ -397,7 +385,7 @@ class ActionWidget(QWidget):
     def _load_labels(self):
         """加载标签列表"""
         try:
-            labels = [l.name for l in Label.get_all()]
+            labels = [label.name for label in Label.get_all()]
             self.label_combo.clear()
             self.label_combo.addItems(labels)
         except Exception:

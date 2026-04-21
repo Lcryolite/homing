@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -447,7 +446,7 @@ def ensure_contact_tables():
     # 检查contacts表是否存在以及是否有is_favorite列
     try:
         # 尝试查询contacts表结构
-        check_result = db.fetchone("SELECT * FROM contacts LIMIT 0")
+        _check_result = db.fetchone("SELECT * FROM contacts LIMIT 0")
         # 如果表存在，继续创建索引
         db.execute("CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email)")
         db.execute(

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
 import uuid
@@ -89,7 +88,7 @@ class ActiveSyncClient:
             # 测试连接
             return await self._test_connection(url)
 
-        except Exception as e:
+        except Exception:
             logger.error("ActiveSync连接失败 {self.account.email}: {e}")
             return False
 
@@ -104,7 +103,7 @@ class ActiveSyncClient:
                 sync_key="0",  # 初始同步键
             )
             return response is not None
-        except Exception as e:
+        except Exception:
             logger.error("ActiveSync测试连接失败: {e}")
             return False
 
@@ -141,7 +140,7 @@ class ActiveSyncClient:
                     logger.error("ActiveSync命令失败: {response.status}")
                     return None
 
-        except Exception as e:
+        except Exception:
             logger.error("发送ActiveSync命令失败: {e}")
             return None
 
@@ -186,7 +185,7 @@ class ActiveSyncClient:
 
     def _parse_folders(self, xml_response: ET.Element) -> List[Dict[str, Any]]:
         """解析文件夹响应"""
-        folders = []
+        _folders = []
         # 简化实现 - 实际需要解析XML
         default_folders = [
             {"name": "收件箱", "type": "inbox"},
@@ -280,7 +279,7 @@ class MockActiveSyncClient(ActiveSyncClient):
         self, folder_id: str, sync_key: str = "", limit: int = 100
     ) -> Dict[str, Any]:
         """模拟邮件同步"""
-        from datetime import datetime, timedelta
+        from datetime import timedelta
 
         # 生成模拟邮件
         emails = []
