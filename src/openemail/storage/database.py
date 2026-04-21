@@ -49,6 +49,8 @@ class Database:
         return self._conn
 
     def _migrate(self) -> None:
+        import shutil
+
         assert self._conn is not None
         cur = self._conn.cursor()
         cur.execute(
@@ -66,7 +68,22 @@ class Database:
                 logger.debug("版本 %d: 无迁移语句", version)
                 continue
 
-            logger.info("执行版本 %d 迁移...", version)
+            # 迁移前备份
+            backup_path = str(self._db_path) + f".pre-v{version}.bak"
+            try:
+                self._conn.close()
+                shutil.copy2(str(self._db_path), backup_path)
+                self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+                self._conn.execute("PRAGMA journal_mode=WAL")
+                self._conn.execute("PRAGMA foreign_keys=ON")
+                self._conn.row_factory = sqlite3.Row
+                cur = self._conn.cursor()
+            except OSError as e:
+                logger.error("备份数据库失败 (v%d): %s", version, e)
+                raise
+
+            logger.info("执行版本 %d 迁移... (备份: %s)", version, backup_path)
+            migration_ok = True
             for stmt in statements:
                 try:
                     cur.execute(stmt)
@@ -74,13 +91,32 @@ class Database:
                     if "duplicate column name" in str(e) or "already exists" in str(e):
                         logger.debug("跳过已存在的操作: %s...", stmt[:60])
                     else:
-                        logger.error("迁移错误: %s", e)
-                        raise
+                        logger.error("迁移 v%d 错误: %s", version, e)
+                        migration_ok = False
+                        break
+
+            if not migration_ok:
+                # 恢复备份
+                logger.warning("迁移 v%d 失败，正在恢复备份...", version)
+                self._conn.close()
+                shutil.copy2(backup_path, str(self._db_path))
+                self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+                self._conn.execute("PRAGMA journal_mode=WAL")
+                self._conn.execute("PRAGMA foreign_keys=ON")
+                self._conn.row_factory = sqlite3.Row
+                raise RuntimeError(f"Migration v{version} failed, restored from backup")
+
             cur.execute(
                 "INSERT OR REPLACE INTO schema_version (version) VALUES (?)", (version,)
             )
+            self._conn.commit()
             logger.info("版本 %d 迁移完成", version)
-        self._conn.commit()
+            # 迁移成功后删除备份
+            try:
+                import os
+                os.unlink(backup_path)
+            except OSError:
+                pass
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         return self.conn.execute(sql, params)
@@ -93,6 +129,37 @@ class Database:
 
     def rollback(self) -> None:
         self.conn.rollback()
+
+    def rollback_to_version(self, target_version: int) -> None:
+        """Rollback migrations from current version down to target_version.
+        Only works for versions with ROLLBACKS entries (v8+)."""
+        from openemail.storage.migrations import ROLLBACKS
+
+        cur = self.conn.cursor()
+        cur.execute("SELECT MAX(version) FROM schema_version")
+        row = cur.fetchone()
+        current = row[0] if row and row[0] is not None else 0
+
+        if target_version >= current:
+            logger.info("当前版本 %d <= 目标 %d，无需回滚", current, target_version)
+            return
+
+        for version in range(current, target_version, -1):
+            rollback_stmts = ROLLBACKS.get(version)
+            if not rollback_stmts:
+                logger.warning("版本 %d 无回滚语句，跳过", version)
+                continue
+
+            logger.info("回滚版本 %d...", version)
+            for stmt in rollback_stmts:
+                try:
+                    cur.execute(stmt)
+                except sqlite3.OperationalError as e:
+                    logger.warning("回滚 v%d 语句失败 (可能已不存在): %s", version, e)
+
+            cur.execute("DELETE FROM schema_version WHERE version = ?", (version,))
+            self._conn.commit()
+            logger.info("版本 %d 回滚完成", version)
 
     def fetchone(self, sql: str, params: tuple = ()) -> sqlite3.Row | None:
         cur = self.execute(sql, params)
