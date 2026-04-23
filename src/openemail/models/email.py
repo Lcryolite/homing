@@ -130,6 +130,13 @@ class Email:
 
     def delete(self) -> None:
         if self.id:
+            # Clean up disk files before removing DB record
+            from openemail.storage.mail_store import mail_store
+
+            if self.file_path:
+                mail_store.delete_raw(self.file_path)
+            if self.has_attachment:
+                mail_store.delete_attachments(self.id)
             db.delete("emails", "id = ?", (self.id,))
             self.id = 0
 

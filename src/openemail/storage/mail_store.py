@@ -74,5 +74,36 @@ class MailStore:
                     folder_dir.rmdir()
             account_dir.rmdir()
 
+    def cleanup_orphan_attachments(self) -> int:
+        """Remove attachment directories with no matching email record.
+
+        Returns:
+            Number of orphan directories removed.
+        """
+        from openemail.storage.database import db
+
+        removed = 0
+        att_root = settings.attachment_dir
+        if not att_root.exists():
+            return removed
+
+        for entry in att_root.iterdir():
+            if not entry.is_dir():
+                continue
+            try:
+                email_id = int(entry.name)
+            except ValueError:
+                continue
+
+            row = db.fetchone("SELECT id FROM emails WHERE id = ?", (email_id,))
+            if row is None:
+                # No matching email — orphan
+                for f in entry.iterdir():
+                    f.unlink()
+                entry.rmdir()
+                removed += 1
+
+        return removed
+
 
 mail_store = MailStore()
