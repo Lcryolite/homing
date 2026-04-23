@@ -34,8 +34,13 @@ class SearchEngine:
         fts_query, filters = SearchEngine._parse_query(query)
 
         # 构建 SQL
-        where_clauses = ["emails_fts MATCH ?"]
-        params = [fts_query]
+        use_fts = fts_query != "*"
+        where_clauses: list[str] = []
+        params: list = []
+
+        if use_fts:
+            where_clauses.append("emails_fts MATCH ?")
+            params.append(fts_query)
 
         if account_id:
             where_clauses.append("emails.account_id = ?")
@@ -62,14 +67,22 @@ class SearchEngine:
             elif key == "before":
                 where_clauses.append("emails.date <= ?")
                 params.append(value)
+            elif key == "from_addr":
+                where_clauses.append("emails.sender_addr = ?")
+                params.append(value)
+            elif key == "to_addr":
+                where_clauses.append("emails.to_addrs LIKE ?")
+                params.append(f"%{value}%")
 
         where_sql = " AND ".join(where_clauses)
+        join_sql = "JOIN emails_fts ON emails.id = emails_fts.rowid" if use_fts else ""
+        order_sql = "ORDER BY rank" if use_fts else "ORDER BY emails.date DESC"
 
         sql = f"""
             SELECT emails.* FROM emails
-            JOIN emails_fts ON emails.id = emails_fts.rowid
+            {join_sql}
             WHERE {where_sql}
-            ORDER BY rank
+            {order_sql}
             LIMIT ? OFFSET ?
         """
         params.extend([limit, offset])
@@ -86,8 +99,13 @@ class SearchEngine:
         """搜索结果的总数"""
         fts_query, filters = SearchEngine._parse_query(query)
 
-        where_clauses = ["emails_fts MATCH ?"]
-        params = [fts_query]
+        use_fts = fts_query != "*"
+        where_clauses: list[str] = []
+        params: list = []
+
+        if use_fts:
+            where_clauses.append("emails_fts MATCH ?")
+            params.append(fts_query)
 
         if account_id:
             where_clauses.append("emails.account_id = ?")
@@ -113,12 +131,19 @@ class SearchEngine:
             elif key == "before":
                 where_clauses.append("emails.date <= ?")
                 params.append(value)
+            elif key == "from_addr":
+                where_clauses.append("emails.sender_addr = ?")
+                params.append(value)
+            elif key == "to_addr":
+                where_clauses.append("emails.to_addrs LIKE ?")
+                params.append(f"%{value}%")
 
         where_sql = " AND ".join(where_clauses)
+        join_sql = "JOIN emails_fts ON emails.id = emails_fts.rowid" if use_fts else ""
 
         sql = f"""
             SELECT COUNT(*) as c FROM emails
-            JOIN emails_fts ON emails.id = emails_fts.rowid
+            {join_sql}
             WHERE {where_sql}
         """
 
@@ -151,13 +176,13 @@ class SearchEngine:
         # 提取 from:
         matches = re.findall(patterns["from"], remaining_query, re.IGNORECASE)
         for match in matches:
-            fts_parts.append(f'sender_addr MATCH "{match}"')
+            filters["from_addr"] = match
             remaining_query = remaining_query.replace(f"from:{match}", "")
 
         # 提取 to:
         matches = re.findall(patterns["to"], remaining_query, re.IGNORECASE)
         for match in matches:
-            fts_parts.append(f'to_addrs MATCH "{match}"')
+            filters["to_addr"] = match
             remaining_query = remaining_query.replace(f"to:{match}", "")
 
         # 提取 subject:
