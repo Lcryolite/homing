@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
 Name=OpenEmail
-Comment=Modern email client
-Exec=python3 /home/lknife/git/openemail/src/openemail/main.py
-Icon=dialog-information
+Comment=A Linux-first desktop email client
+Exec=openemail
+Icon=openemail
 Terminal=false
 Categories=Network;Email;
 StartupNotify=true
