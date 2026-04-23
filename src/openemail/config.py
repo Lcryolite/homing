@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SETTINGS: dict[str, Any] = {
     "theme": "system",
     "sync_interval_minutes": 5,
-    "onboarding_state": "not_started",  # "not_started", "in_progress", "submitting", "completed", "recovery_needed"
+    "onboarding_state": "not_started",
     "window": {
         "width": 1200,
         "height": 800,
@@ -23,6 +23,7 @@ _DEFAULT_SETTINGS: dict[str, Any] = {
     "accounts": [],
     "calendar_sync_enabled": False,
     "todo_sync_enabled": False,
+    "semantic_search_enabled": False,
 }
 
 

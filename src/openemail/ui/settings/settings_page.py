@@ -148,6 +148,26 @@ class SettingsPageWidget(QWidget):
         lang_layout.addStretch()
         layout.addWidget(lang_group)
 
+        search_group = QGroupBox("搜索")
+        search_group.setProperty("class", "settings-group")
+        search_layout = QVBoxLayout(search_group)
+
+        self._semantic_search_check = QCheckBox("启用语义搜索（实验性）")
+        self._semantic_search_check.setChecked(
+            settings.get("semantic_search_enabled", False)
+        )
+        self._semantic_search_check.setProperty("class", "settings-check")
+        search_layout.addWidget(self._semantic_search_check)
+
+        semantic_hint = QLabel(
+            "语义搜索需要安装额外依赖（numpy 等），启用后搜索速度可能降低。"
+        )
+        semantic_hint.setProperty("class", "settings-subtext")
+        semantic_hint.setWordWrap(True)
+        search_layout.addWidget(semantic_hint)
+
+        layout.addWidget(search_group)
+
         self._save_general_btn = QPushButton("保存设置")
         self._save_general_btn.setProperty("class", "primary")
         self._save_general_btn.clicked.connect(self._save_general_settings)
@@ -411,6 +431,9 @@ class SettingsPageWidget(QWidget):
         old_theme = settings.theme
         settings.theme = new_theme
         settings.set("sync_interval_minutes", self._sync_interval_spin.value())
+        settings.set(
+            "semantic_search_enabled", self._semantic_search_check.isChecked()
+        )
 
         if new_theme != old_theme:
             self.theme_changed.emit()

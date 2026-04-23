@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any, Tuple
 
 from openemail.models.email import Email
 from openemail.storage.database import db
+from openemail.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class EnhancedSearchEngine:
         limit: int = 50,
         offset: int = 0,
         include_attachments: bool = False,
-        semantic_weight: float = 0.3,
+        semantic_weight: float = 0.0,
     ) -> List[Email]:
         """
         增强版全文搜索，支持混合搜索（FTS5 + 语义分析）
@@ -35,8 +36,12 @@ class EnhancedSearchEngine:
             limit: 返回结果数量限制
             offset: 偏移量
             include_attachments: 是否搜索附件内容
-            semantic_weight: 语义搜索权重 (0.0-1.0)
+            semantic_weight: 语义搜索权重 (0.0-1.0, default 0.0 = disabled)
         """
+        # Override with global setting if not explicitly enabled
+        if semantic_weight > 0 and not settings.get("semantic_search_enabled", False):
+            logger.debug("Semantic search disabled by settings, using FTS only")
+            semantic_weight = 0.0
         # 解析查询，提取过滤器和搜索词
         filters, search_terms = EnhancedSearchEngine._parse_advanced_query(query)
 

@@ -19,7 +19,7 @@ OpenEmail integrates email, calendar, contacts, todos, and project management in
 - **Attachment management** — Add, preview, and manage attachments with a dedicated UI
 - **Email threading** — Conversation view with THREAD=REFERENCES support and local fallback
 - **Enhanced search** — FTS5 full-text search with advanced filters (from:, to:, subject:, has:, is:, after:, before:, in:), snippet highlighting, search history, and suggestions
-- **Semantic search** — Sentence Transformers + Faiss vector similarity search with reranking
+- **Semantic search** — Sentence Transformers + Faiss vector similarity search with reranking (Experimental, opt-in)
 - **Spam filtering** — Built-in Bayesian spam classifier with Chinese (jieba) tokenization; trainable with unsure middle state and correction feedback loop
 - **Mail sync** — Background sync with configurable interval; per-account status tracking
 - **Rich text editor** — Compose emails with formatting toolbar (bold, italic, lists, links, etc.)
