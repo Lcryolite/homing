@@ -378,4 +378,69 @@ class Database:
         return cur.rowcount
 
 
+    def health_check(self) -> dict[str, Any]:
+        """Return a summary of database health."""
+        result: dict[str, Any] = {"ok": True, "issues": []}
+        try:
+            cur = self.conn.cursor()
+
+            # Integrity check
+            cur.execute("PRAGMA integrity_check")
+            integrity = cur.fetchone()
+            if integrity is None or integrity[0] != "ok":
+                result["ok"] = False
+                result["issues"].append(f"integrity_check: {integrity[0] if integrity else 'unknown'}")
+
+            # Table counts
+            tables = ["accounts", "folders", "emails", "drafts", "email_threads", "offline_operations"]
+            counts = {}
+            for t in tables:
+                try:
+                    cur.execute(f"SELECT COUNT(*) FROM {t}")
+                    counts[t] = cur.fetchone()[0]
+                except Exception:
+                    counts[t] = -1
+            result["counts"] = counts
+
+            # Database size
+            db_size = self._db_path.stat().st_size
+            result["db_size_bytes"] = db_size
+
+            # FTS5 table presence
+            try:
+                cur.execute("SELECT COUNT(*) FROM emails_fts")
+                result["fts5_rows"] = cur.fetchone()[0]
+            except Exception as e:
+                result["fts5_rows"] = -1
+                result["issues"].append(f"fts5 check: {e}")
+
+            # Orphan folder check (folders with no account)
+            try:
+                cur.execute(
+                    "SELECT COUNT(*) FROM folders WHERE account_id NOT IN (SELECT id FROM accounts)"
+                )
+                orphan_folders = cur.fetchone()[0]
+                if orphan_folders > 0:
+                    result["issues"].append(f"orphan_folders: {orphan_folders}")
+            except Exception:
+                pass
+
+            # Orphan email check (emails with no folder)
+            try:
+                cur.execute(
+                    "SELECT COUNT(*) FROM emails WHERE folder_id NOT IN (SELECT id FROM folders)"
+                )
+                orphan_emails = cur.fetchone()[0]
+                if orphan_emails > 0:
+                    result["issues"].append(f"orphan_emails: {orphan_emails}")
+            except Exception:
+                pass
+
+        except Exception as e:
+            result["ok"] = False
+            result["issues"].append(f"health_check exception: {e}")
+
+        return result
+
+
 db = Database()

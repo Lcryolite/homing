@@ -84,6 +84,7 @@ class SettingsPageWidget(QWidget):
         self._tab_widget.addTab(self._create_accounts_tab(), "账户")
         self._tab_widget.addTab(self._create_sync_tab(), "同步")
         self._tab_widget.addTab(self._create_filter_tab(), "过滤规则")
+        self._tab_widget.addTab(self._create_tools_tab(), "工具")
         self._tab_widget.addTab(self._create_about_tab(), "关于")
 
         layout.addWidget(self._tab_widget)
@@ -329,6 +330,36 @@ class SettingsPageWidget(QWidget):
         self._load_filter_rules()
         return self._wrap_in_scroll(content)
 
+    def _create_tools_tab(self) -> QScrollArea:
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(16)
+
+        diag_group = QGroupBox("诊断与维护")
+        diag_group.setProperty("class", "settings-group")
+        diag_layout = QVBoxLayout(diag_group)
+
+        self._health_check_btn = QPushButton("数据库健康检查")
+        self._health_check_btn.setProperty("class", "secondary")
+        self._health_check_btn.clicked.connect(self._run_health_check)
+        diag_layout.addWidget(self._health_check_btn)
+
+        self._rebuild_fts_btn = QPushButton("重建 FTS 索引")
+        self._rebuild_fts_btn.setProperty("class", "secondary")
+        self._rebuild_fts_btn.clicked.connect(self._run_rebuild_fts)
+        diag_layout.addWidget(self._rebuild_fts_btn)
+
+        self._cleanup_att_btn = QPushButton("清理孤儿附件")
+        self._cleanup_att_btn.setProperty("class", "secondary")
+        self._cleanup_att_btn.clicked.connect(self._run_cleanup_attachments)
+        diag_layout.addWidget(self._cleanup_att_btn)
+
+        layout.addWidget(diag_group)
+        layout.addStretch()
+
+        return self._wrap_in_scroll(content)
+
     def _create_about_tab(self) -> QScrollArea:
         content = QWidget()
         layout = QVBoxLayout(content)
@@ -522,6 +553,37 @@ class SettingsPageWidget(QWidget):
         QMessageBox.information(self, "测试连接", "CalDAV 连接测试功能开发中")
         self._test_caldav_btn.setEnabled(True)
         self._test_caldav_btn.setText("测试连接")
+
+    def _run_health_check(self) -> None:
+        from openemail.storage.database import db
+
+        result = db.health_check()
+        if result["ok"] and not result["issues"]:
+            QMessageBox.information(self, "健康检查", "数据库状态正常。")
+        else:
+            lines = ["数据库健康检查发现问题：", ""]
+            for issue in result.get("issues", []):
+                lines.append(f"- {issue}")
+            lines.append("")
+            lines.append(f"数据库大小: {result.get('db_size_bytes', 0) / 1024:.1f} KB")
+            QMessageBox.warning(self, "健康检查", "\n".join(lines))
+
+    def _run_rebuild_fts(self) -> None:
+        from openemail.storage.search import SearchEngine
+
+        ok = SearchEngine.rebuild_fts_index()
+        if ok:
+            QMessageBox.information(self, "重建索引", "FTS 索引重建成功。")
+        else:
+            QMessageBox.warning(self, "重建索引", "FTS 索引重建失败，请查看日志。")
+
+    def _run_cleanup_attachments(self) -> None:
+        from openemail.storage.mail_store import mail_store
+
+        removed = mail_store.cleanup_orphan_attachments()
+        QMessageBox.information(
+            self, "清理附件", f"清理完成，共移除 {removed} 个孤儿附件目录。"
+        )
 
     def _on_add_filter(self) -> None:
         from openemail.ui.filter.filter_dialog import FilterRulesDialog

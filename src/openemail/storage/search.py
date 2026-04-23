@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import re
 
 from openemail.models.email import Email
 from openemail.storage.database import db
+
+logger = logging.getLogger(__name__)
 
 
 class SearchEngine:
@@ -224,6 +227,21 @@ class SearchEngine:
 
         fts_query = " AND ".join(fts_parts) if fts_parts else "*"
         return fts_query, filters
+
+    @staticmethod
+    def rebuild_fts_index() -> bool:
+        """Rebuild the FTS5 virtual table from scratch.
+
+        Returns:
+            True if rebuild succeeded.
+        """
+        try:
+            db.execute("INSERT INTO emails_fts(emails_fts) VALUES('rebuild')")
+            logger.info("FTS5 index rebuilt successfully")
+            return True
+        except Exception as e:
+            logger.error("FTS5 rebuild failed: %s", e)
+            return False
 
     @staticmethod
     def highlight(text: str, query: str, max_len: int = 100) -> str:
