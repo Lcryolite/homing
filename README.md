@@ -249,7 +249,7 @@ pip install pytest pytest-qt
 pytest tests/ -v
 ```
 
-Current test coverage: 46 test cases across 5 test files (smoke, connection status, database security, folder discovery, enhanced search). Coverage targets are set to 80%+ by v0.6.0 — see [ROADMAP.md](ROADMAP.md).
+Current test coverage: 163 test cases across 16 test files. Coverage targets are set to 80%+ by v0.8.0 — see [ROADMAP.md](ROADMAP.md).
 
 ## Roadmap
 

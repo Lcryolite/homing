@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openemail"
-version = "0.1.0"
-description = "A Linux desktop email client with spam filtering, calendar, todo, and project board"
+version = "0.6.0"
+description = "A Linux-first desktop email client with IMAP/SMTP, OAuth2, calendar, and contacts"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 requires-python = ">=3.11"
@@ -29,15 +29,17 @@ dependencies = [
     "PyQt6-WebEngine>=6.11",
     "aioimaplib>=2.0",
     "aiosmtplib>=5.1",
-    "authlib>=1.6",
-    "httpx>=0.27",
     "mail-parser>=4.2",
-    "simplebayes>=1.0",
-    "jieba>=0.42",
     "keyring>=25.0",
     "cryptography>=44.0",
-    "numpy>=1.26",
 ]
+
+[project.optional-dependencies]
+oauth = ["authlib>=1.6", "httpx>=0.27"]
+semantic = ["numpy>=1.26"]
+spam = ["simplebayes>=1.0", "jieba>=0.42"]
+dev = ["pytest>=8.0", "pytest-qt>=4.0", "ruff>=0.6"]
+all = ["authlib>=1.6", "httpx>=0.27", "numpy>=1.26", "simplebayes>=1.0", "jieba>=0.42"]
 
 [project.scripts]
 openemail = "openemail.main:main"
