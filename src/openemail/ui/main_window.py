@@ -150,8 +150,8 @@ class MailPageWidget(QWidget):
             title = f"{title} - {account.name}"
         self._mail_list.set_title(title)
 
-        emails = Email.get_by_folder(folder.id)
-        self._mail_list.load_emails(emails)
+        emails = Email.get_by_folder(folder.id, limit=self._mail_list.PAGE_SIZE)
+        self._mail_list.load_emails(emails, folder_id=folder.id)
 
     def load_spam(self, account: Account) -> None:
         spam_folder = Folder.get_by_name(account.id, "Spam")

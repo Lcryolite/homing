@@ -93,9 +93,15 @@ class MailListWidget(QWidget):
     mark_spam_requested = pyqtSignal(int)
     mark_not_spam_requested = pyqtSignal(int)
 
+    PAGE_SIZE = 100
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._emails: list[Email] = []
+        self._folder_id: int = 0
+        self._offset: int = 0
+        self._has_more: bool = True
+        self._loading: bool = False
         self._setup_ui()
 
     def _setup_ui(self) -> None:
@@ -118,19 +124,52 @@ class MailListWidget(QWidget):
         self._list.itemDoubleClicked.connect(self._on_item_double_clicked)
         self._list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._list.customContextMenuRequested.connect(self._show_context_menu)
+        # Lazy load on scroll
+        self._list.verticalScrollBar().valueChanged.connect(self._on_scroll)
         layout.addWidget(self._list)
+
+        self._loading_label = QLabel("加载中...")
+        self._loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._loading_label.hide()
+        layout.addWidget(self._loading_label)
 
     def set_title(self, title: str) -> None:
         self._header.setText(title)
 
-    def load_emails(self, emails: list[Email]) -> None:
-        self._emails = emails
-        self._list.clear()
+    def load_emails(self, emails: list[Email], folder_id: int = 0, append: bool = False) -> None:
+        if not append:
+            self._emails = emails
+            self._list.clear()
+            self._offset = len(emails)
+            self._folder_id = folder_id
+            self._has_more = len(emails) >= self.PAGE_SIZE
+        else:
+            self._emails.extend(emails)
+            self._offset += len(emails)
+            self._has_more = len(emails) >= self.PAGE_SIZE
+
         for email_obj in emails:
             item = QTreeWidgetItem(self._list)
             widget = MailItemWidget(email_obj)
             item.setData(0, Qt.ItemDataRole.UserRole, email_obj.id)
             self._list.setItemWidget(item, 0, widget)
+
+        self._loading = False
+        self._loading_label.hide()
+
+    def _on_scroll(self, value: int) -> None:
+        if self._loading or not self._has_more or not self._folder_id:
+            return
+        scrollbar = self._list.verticalScrollBar()
+        if value >= scrollbar.maximum() - 20:
+            self._load_next_page()
+
+    def _load_next_page(self) -> None:
+        self._loading = True
+        self._loading_label.show()
+        from openemail.models.email import Email
+        more = Email.get_by_folder(self._folder_id, limit=self.PAGE_SIZE, offset=self._offset)
+        self.load_emails(more, self._folder_id, append=True)
 
     def add_email(self, email: Email) -> None:
         self._emails.insert(0, email)
