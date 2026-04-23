@@ -101,27 +101,10 @@ class SyncWorker(QThread):
             raise ConnectionError(f"Cannot connect to IMAP server for {account.email}")
 
         try:
-            folders = Folder.get_by_account(account.id)
-            logger.info("数据库中找到 %d 个文件夹", len(folders))
-            if not folders:
-                remote_folders = await client.list_folders()
-                logger.info("远程发现 %d 个文件夹", len(remote_folders))
-                Folder.discover_system_folders(account.id, remote_folders)
-                for rf in remote_folders:
-                    name = rf["name"]
-                    folder = Folder.get_by_name(account.id, name)
-                    if folder is None:
-                        flags = rf.get("flags", [])
-                        special_use = Folder._resolve_special_use(name, flags) or ""
-                        folder = Folder(
-                            account_id=account.id,
-                            name=name,
-                            path=rf["path"],
-                            is_system=bool(special_use),
-                            special_use=special_use,
-                        )
-                        folder.save()
-                    folders.append(folder)
+            # Always reconcile folders with server (handles rename/delete/reelection)
+            remote_folders = await client.list_folders()
+            logger.info("远程发现 %d 个文件夹", len(remote_folders))
+            folders = Folder.reconcile_folders(account.id, remote_folders)
 
             total = 0
             for folder in folders:

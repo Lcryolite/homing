@@ -3,7 +3,6 @@
 Tests are unit-level: no real IMAP connection needed.
 """
 
-import pytest
 
 from openemail.core.imap_client import _extract_uidvalidity
 from openemail.models.folder import Folder

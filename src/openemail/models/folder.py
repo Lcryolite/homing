@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
 from openemail.storage.database import db
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_FOLDERS: list[str] = [
     "INBOX",
@@ -192,6 +195,97 @@ class Folder:
         return discovered
 
     @classmethod
+    def reconcile_folders(
+        cls, account_id: int, remote_folders: list[dict[str, Any]]
+    ) -> list[Folder]:
+        """Reconcile local folder list with server folder list.
+
+        Handles:
+        - New folders → create
+        - Renamed folders → update path (match by special_use or fuzzy)
+        - Deleted folders → remove from DB
+        - Existing unchanged → keep
+
+        Returns the full list of current folders after reconciliation.
+        """
+        remote_by_name: dict[str, dict[str, Any]] = {}
+        for rf in remote_folders:
+            name = rf.get("name", "")
+            remote_by_name[name] = rf
+
+        remote_names = set(remote_by_name.keys())
+        local_folders = cls.get_by_account(account_id)
+        local_by_name = {f.name: f for f in local_folders}
+        local_names = set(local_by_name.keys())
+
+        # 1. Deleted folders: in local but not remote → delete
+        removed = local_names - remote_names
+        for name in removed:
+            folder = local_by_name[name]
+            logger.info(
+                "Folder '%s' no longer on server, removing local (id=%d)", name, folder.id
+            )
+            # Remove emails in this folder first
+            db.execute(
+                "DELETE FROM emails WHERE account_id = ? AND folder_id = ?",
+                (account_id, folder.id),
+            )
+            db.execute("DELETE FROM folders WHERE id = ?", (folder.id,))
+
+        # 2. New folders: in remote but not local → create
+        added = remote_names - local_names
+        result: list[Folder] = []
+        for name in added:
+            rf = remote_by_name[name]
+            flags = rf.get("flags", [])
+            special_use = cls._resolve_special_use(name, flags) or ""
+            folder = cls(
+                account_id=account_id,
+                name=name,
+                path=rf.get("path", name),
+                is_system=bool(special_use),
+                special_use=special_use,
+            )
+            folder.save()
+            result.append(folder)
+
+        # 3. Existing folders: update path if changed, re-resolve special_use
+        unchanged = remote_names & local_names
+        for name in unchanged:
+            folder = local_by_name[name]
+            rf = remote_by_name[name]
+            flags = rf.get("flags", [])
+            new_special_use = cls._resolve_special_use(name, flags) or ""
+            remote_path = rf.get("path", name)
+
+            changed = False
+            if remote_path and folder.path != remote_path:
+                folder.path = remote_path
+                changed = True
+            if new_special_use and not folder.special_use:
+                folder.special_use = new_special_use
+                folder.is_system = True
+                changed = True
+            if changed:
+                folder.save()
+            result.append(folder)
+
+        # 4. Also run discover_system_folders for dedup marking
+        cls.discover_system_folders(account_id, remote_folders)
+
+        return result
+
+    @classmethod
+    def get_by_path(cls, account_id: int, path: str) -> Folder | None:
+        row = db.fetchone(
+            "SELECT * FROM folders WHERE account_id = ? AND path = ?",
+            (account_id, path),
+        )
+        if row is None:
+            return None
+        return cls._from_row(row)
+
+    @classmethod
     def _resolve_special_use(cls, name: str, flags: list[Any]) -> Optional[str]:
         """
         解析文件夹的 SPECIAL-USE 属性。
@@ -226,4 +320,6 @@ class Folder:
             unread_count=row["unread_count"] or 0,
             is_system=bool(row["is_system"]),
             special_use=row["special_use"] if "special_use" in row.keys() else "",
+            uid_validity=row["uid_validity"] if "uid_validity" in row.keys() else "",
+            last_uid=row["last_uid"] if "last_uid" in row.keys() else "",
         )

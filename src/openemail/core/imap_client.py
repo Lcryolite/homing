@@ -479,10 +479,21 @@ class IMAPClient:
                 )
 
     async def _resolve_folder_name(self, folder_name: str) -> str:
-        """将标准文件夹名映射到服务器实际路径，优先使用 PROVIDER_PRESETS 配置。"""
+        """Map a standard folder name to the server's actual path.
+
+        Priority:
+        1. Look up the discovered path from the DB (set by reconcile_folders).
+        2. Fall back to hardcoded PROVIDER_PRESETS mapping.
+        3. Return the name as-is if nothing matches.
+        """
         from openemail.models.account import PROVIDER_PRESETS
 
-        # 标准名称 → 服务器文件夹名（不含前缀）
+        # Try DB lookup first — the real server path was stored during discovery
+        folder = Folder.get_by_name(self._account.id, folder_name)
+        if folder and folder.path:
+            return folder.path if not folder.path.startswith('"') else folder.path
+
+        # Fallback: hardcoded map + provider prefix
         standard_map = {
             "INBOX": "INBOX",
             "Sent": "Sent Mail",
@@ -491,7 +502,6 @@ class IMAPClient:
             "Trash": "Trash",
         }
 
-        # 通过 imap_host 匹配 provider，取 folder_prefix
         prefix = ""
         if self._account.imap_host:
             host_lower = self._account.imap_host.lower()

@@ -1,14 +1,6 @@
 """Tests for connection tester integration with status machine (T1.2)."""
 
-import pytest
 
-from openemail.core.connection_tester import (
-    ConnectionTestErrorCategory,
-    ConnectionTestResult,
-    ConnectionTestStatus,
-    ConnectionTestSummary,
-    ProtocolType,
-)
 from openemail.core.connection_status import (
     AccountValidationResult,
     ConnectionStatus,
