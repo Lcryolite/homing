@@ -71,6 +71,7 @@ class OfflineOperation:
     last_attempt: Optional[datetime] = None
     next_attempt: Optional[datetime] = None
     error_message: str = ""
+    idempotency_key: str = ""
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -86,6 +87,10 @@ class OfflineOperation:
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         result = asdict(self)
+
+        # Exclude id when it is 0 so SQLite auto-increment works
+        if result.get("id") == 0:
+            del result["id"]
 
         # 序列化日期时间
         for field in [
@@ -107,6 +112,10 @@ class OfflineOperation:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> OfflineOperation:
         """从字典创建操作"""
+        # Normalize sqlite3.Row to plain dict
+        if not isinstance(data, dict):
+            data = dict(data)
+
         # 解析日期时间
         for field in [
             "last_attempt",
@@ -383,23 +392,37 @@ class OfflineQueue:
                     last_attempt    TEXT,
                     next_attempt    TEXT,
                     error_message   TEXT DEFAULT '',
+                    idempotency_key TEXT,
                     created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     completed_at    TEXT
                 )
             """)
 
+            # Migrate: add idempotency_key if missing (pre-v0.6.0 schema)
+            try:
+                db.execute("ALTER TABLE offline_operations ADD COLUMN idempotency_key TEXT")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            # Create unique index for idempotency
+            db.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_offline_ops_idempotency
+                ON offline_operations(idempotency_key)
+                WHERE idempotency_key IS NOT NULL
+            """)
+
             # 创建索引
             db.execute("""
-                CREATE INDEX IF NOT EXISTS idx_offline_ops_status 
+                CREATE INDEX IF NOT EXISTS idx_offline_ops_status
                 ON offline_operations(status, priority)
             """)
             db.execute("""
-                CREATE INDEX IF NOT EXISTS idx_offline_ops_account 
+                CREATE INDEX IF NOT EXISTS idx_offline_ops_account
                 ON offline_operations(account_id, status)
             """)
             db.execute("""
-                CREATE INDEX IF NOT EXISTS idx_offline_ops_retry 
+                CREATE INDEX IF NOT EXISTS idx_offline_ops_retry
                 ON offline_operations(next_attempt, retry_count)
             """)
 
@@ -459,6 +482,20 @@ class OfflineQueue:
     def add_operation(self, operation: OfflineOperation) -> int:
         """添加操作到队列"""
         try:
+            # Idempotency check: skip if same key already pending/queued/processing
+            if operation.idempotency_key:
+                row = db.fetchone(
+                    "SELECT id FROM offline_operations WHERE idempotency_key = ? AND status IN ('pending', 'queued', 'processing', 'retrying')",
+                    (operation.idempotency_key,),
+                )
+                if row:
+                    logging.info(
+                        "Idempotent skip: %s already in queue (ID=%d)",
+                        operation.idempotency_key,
+                        row["id"],
+                    )
+                    return row["id"]
+
             # 保存到数据库
             operation_dict = operation.to_dict()
             operation_id = db.insert("offline_operations", operation_dict)
@@ -556,6 +593,24 @@ class OfflineQueue:
 
         return self.add_operation(operation)
 
+    @staticmethod
+    def _is_retryable_error(error_msg: str) -> bool:
+        """判断错误是否值得重试。"""
+        if not error_msg:
+            return True
+        non_retryable = [
+            "auth failed",
+            "authentication failed",
+            "invalid credentials",
+            "permission denied",
+            "bad request",
+            "validation error",
+            "not found",
+            "does not exist",
+        ]
+        lowered = error_msg.lower()
+        return not any(nr in lowered for nr in non_retryable)
+
     def _process_operation(self, operation: OfflineOperation) -> bool:
         """处理单个操作"""
         operation_id = operation.id
@@ -610,7 +665,8 @@ class OfflineQueue:
             # 处理失败，检查是否需要重试
             operation.retry_count += 1
 
-            if operation.retry_count < operation.max_retries:
+            retryable = self._is_retryable_error(error_msg)
+            if retryable and operation.retry_count < operation.max_retries:
                 # 计算下次重试时间
                 retry_index = min(
                     operation.retry_count - 1, len(self._retry_intervals) - 1
@@ -636,7 +692,7 @@ class OfflineQueue:
                 )
 
             else:
-                # 重试次数用完，标记为失败
+                # 重试次数用完或错误不可重试，标记为失败
                 db.update(
                     "offline_operations",
                     {
@@ -649,9 +705,14 @@ class OfflineQueue:
                     (operation_id,),
                 )
 
-                logging.error(
-                    f"操作最终失败，重试次数用完: {operation_type} (ID: {operation_id})"
-                )
+                if not retryable:
+                    logging.error(
+                        f"操作失败（不可重试错误）: {operation_type} (ID: {operation_id}): {error_msg}"
+                    )
+                else:
+                    logging.error(
+                        f"操作最终失败，重试次数用完: {operation_type} (ID: {operation_id})"
+                    )
 
             return False
 
@@ -739,6 +800,29 @@ class OfflineQueue:
         except Exception as e:
             logging.error(f"获取待处理操作时出错: {e}")
             return []
+
+    def recover_interrupted_operations(self) -> int:
+        """Recover operations left in 'processing' state (e.g., after crash).
+
+        Returns:
+            Number of operations reset to pending.
+        """
+        try:
+            now = datetime.now().isoformat()
+            cur = db.execute(
+                """
+                UPDATE offline_operations
+                SET status = ?, updated_at = ?, next_attempt = ?
+                WHERE status = ?
+                """,
+                (OperationStatus.PENDING.value, now, now, OperationStatus.PROCESSING.value),
+            )
+            rowcount = cur.rowcount
+            logging.info("Recovered %d interrupted operations to pending", rowcount)
+            return rowcount
+        except Exception as e:
+            logging.error("Recover interrupted operations failed: %s", e)
+            return 0
 
     def get_failed_operations(self, limit: int = 100) -> List[OfflineOperation]:
         """获取失败操作列表"""
