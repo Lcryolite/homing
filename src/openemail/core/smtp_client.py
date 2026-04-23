@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import smtplib
 import ssl
@@ -17,6 +18,90 @@ except ImportError:
 from openemail.core.auth import AuthError, ensure_auth  # noqa: E402
 from openemail.core.oauth2 import OAuth2Authenticator  # noqa: E402
 from openemail.models.account import Account  # noqa: E402
+
+
+def _parse_message_addresses(msg, header_name: str) -> list[str]:
+    """Extract email addresses from a message header."""
+    from email.utils import getaddresses
+
+    values = msg.get_all(header_name, [])
+    return [addr for _, addr in getaddresses(values)]
+
+
+def _save_sent_copy(account: Account, message) -> None:
+    """Save a copy of the sent message to the local Sent folder."""
+    from datetime import datetime, timezone
+
+    from openemail.models.email import Email
+    from openemail.models.folder import Folder
+    from openemail.storage.mail_store import mail_store
+
+    sent_folder = Folder.get_by_special_use(account.id, "sent")
+    if sent_folder is None:
+        sent_folder = Folder.get_by_name(account.id, "Sent")
+    if sent_folder is None:
+        sent_folder = Folder(
+            account_id=account.id,
+            name="Sent",
+            path="Sent",
+            is_system=True,
+            special_use="sent",
+        )
+        sent_folder.save()
+
+    raw_bytes = message.as_bytes()
+    uid = f"sent-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+    file_path = mail_store.save_raw(account.id, sent_folder.name, uid, raw_bytes)
+
+    # Parse basic headers for the DB record
+    msg_id = message.get("Message-ID", "")
+    subject = message.get("Subject", "")
+    to_addrs = _parse_message_addresses(message, "To")
+    cc_addrs = _parse_message_addresses(message, "Cc")
+    bcc_addrs = _parse_message_addresses(message, "Bcc")
+    date_str = message.get("Date", "")
+
+    # Try to normalize date to ISO format
+    parsed_date = ""
+    if date_str:
+        try:
+            from email.utils import parsedate_to_datetime
+
+            dt = parsedate_to_datetime(date_str)
+            parsed_date = dt.isoformat()
+        except Exception:
+            parsed_date = date_str
+
+    # Check for attachments
+    has_attachment = False
+    for part in message.walk():
+        if part.get_content_disposition() == "attachment":
+            has_attachment = True
+            break
+
+    email_record = Email(
+        account_id=account.id,
+        folder_id=sent_folder.id,
+        uid=uid,
+        message_id=msg_id,
+        subject=subject,
+        sender_name=account.name or "",
+        sender_addr=account.email,
+        to_addrs=json.dumps(to_addrs, ensure_ascii=False),
+        cc_addrs=json.dumps(cc_addrs, ensure_ascii=False),
+        bcc_addrs=json.dumps(bcc_addrs, ensure_ascii=False),
+        date=parsed_date,
+        size=len(raw_bytes),
+        is_read=True,
+        is_flagged=False,
+        is_deleted=False,
+        is_spam=False,
+        has_attachment=has_attachment,
+        preview_text="",
+        file_path=str(file_path),
+    )
+    email_record.save()
+    logger.info("Saved sent copy to %s (email id=%d)", file_path, email_record.id)
 
 
 class SMTPClient:
@@ -100,6 +185,13 @@ class SMTPClient:
                 )
             else:
                 await self._send_sync(message_str, all_recipients, use_tls, start_tls)
+
+            # Save a copy to the local Sent folder on successful send
+            try:
+                _save_sent_copy(self._account, message)
+            except Exception as e:
+                logger.warning("Failed to save sent copy: %s", e)
+
             return True
         except Exception as e:
             logger.error("SMTP send error for %s: %s", self._account.email, e)
