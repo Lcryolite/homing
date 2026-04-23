@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class DraftAutoSave(QObject):
     """草稿自动保存管理器，定时保存撰写内容到本地数据库"""
 
-    AUTOSAVE_INTERVAL_MS = 5000
+    AUTOSAVE_INTERVAL_MS = 30000
 
     def __init__(self, account_id: int, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
