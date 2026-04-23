@@ -14,6 +14,8 @@ from urllib.parse import parse_qs, urlparse
 from authlib.integrations.httpx_client import OAuth2Client
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
 
+from openemail.utils.exceptions import OAuthException
+
 if TYPE_CHECKING:
     from openemail.models.account import Account
 
@@ -32,9 +34,10 @@ class OAuthErrorCode(str, Enum):
     TOKEN_EXPIRED = "OAUTH_007"
     PROVIDER_UNSUPPORTED = "OAUTH_008"
     LOCAL_SERVER_FAILED = "OAUTH_009"
+    UNKNOWN = "OAUTH_UNKNOWN"
 
 
-class OAuthError(Exception):
+class OAuthError(OAuthException):
     """OAuth错误类"""
 
     def __init__(self, code: OAuthErrorCode, message: str, suggestion: str = ""):

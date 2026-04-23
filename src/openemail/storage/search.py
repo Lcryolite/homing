@@ -154,6 +154,19 @@ class SearchEngine:
         return row["c"] if row else 0
 
     @staticmethod
+    def _escape_fts_term(term: str) -> str:
+        """Escape a user-provided term for safe FTS5 MATCH usage.
+
+        Wraps the term in double quotes and escapes internal double quotes
+        using the FTS5 phrase syntax (double-double-quote).
+        """
+        if not term:
+            return ""
+        # Escape internal double quotes
+        escaped = term.replace('"', '""')
+        return f'"{escaped}"'
+
+    @staticmethod
     def _parse_query(query: str) -> tuple[str, dict]:
         """
         解析搜索查询，提取 FTS 查询和过滤器
@@ -191,7 +204,7 @@ class SearchEngine:
         # 提取 subject:
         matches = re.findall(patterns["subject"], remaining_query, re.IGNORECASE)
         for match in matches:
-            fts_parts.append(f'subject MATCH "{match}"')
+            fts_parts.append(f'subject MATCH {SearchEngine._escape_fts_term(match)}')
             remaining_query = remaining_query.replace(f"subject:{match}", "")
 
         # 提取 has:
@@ -223,7 +236,7 @@ class SearchEngine:
         # 剩余的作为普通全文搜索
         remaining_query = remaining_query.strip()
         if remaining_query:
-            fts_parts.append(remaining_query)
+            fts_parts.append(SearchEngine._escape_fts_term(remaining_query))
 
         fts_query = " AND ".join(fts_parts) if fts_parts else "*"
         return fts_query, filters

@@ -169,6 +169,9 @@ class Settings:
 
     @theme.setter
     def theme(self, value: str) -> None:
+        allowed = {"system", "light", "dark"}
+        if value not in allowed:
+            raise ValueError(f"Invalid theme '{value}'. Must be one of {allowed}")
         self._data["theme"] = value
         self.save()
 
@@ -176,9 +179,32 @@ class Settings:
     def sync_interval(self) -> int:
         return self._data.get("sync_interval_minutes", 5)
 
+    @sync_interval.setter
+    def sync_interval(self, value: int) -> None:
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("sync_interval must be a positive integer")
+        self._data["sync_interval_minutes"] = value
+        self.save()
+
     @property
     def window_geometry(self) -> dict[str, int]:
         return self._data.get("window", {})
+
+    @window_geometry.setter
+    def window_geometry(self, value: dict[str, int]) -> None:
+        expected = {"x", "y", "width", "height", "sidebar_width", "detail_visible"}
+        if not isinstance(value, dict):
+            raise ValueError("window_geometry must be a dict")
+        for k, v in value.items():
+            if k not in expected:
+                raise ValueError(f"Unexpected window geometry key: {k}")
+            if k == "detail_visible":
+                if not isinstance(v, bool):
+                    raise ValueError(f"window_geometry['{k}'] must be bool")
+            elif not isinstance(v, int):
+                raise ValueError(f"window_geometry['{k}'] must be int")
+        self._data["window"] = {**self._data.get("window", {}), **value}
+        self.save()
 
     @property
     def onboarding_state(self) -> str:
@@ -188,6 +214,9 @@ class Settings:
     @onboarding_state.setter
     def onboarding_state(self, value: str) -> None:
         """设置初始化引导状态"""
+        allowed = {"not_started", "in_progress", "completed", "skipped"}
+        if value not in allowed:
+            raise ValueError(f"Invalid onboarding_state '{value}'. Must be one of {allowed}")
         self._data["onboarding_state"] = value
         self.save()
 

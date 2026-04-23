@@ -409,7 +409,7 @@ class AccountsDialog(QDialog):
             # 首先清除所有账户的默认标记
             from openemail.storage.database import db
 
-            db.update("accounts", {"is_default": 0}, None, ())
+            db.update_all("accounts", {"is_default": 0})
 
             # 设置选中的账户为默认
             account.is_default = True
@@ -450,7 +450,7 @@ class AccountsDialog(QDialog):
             # 首先清除所有账户的默认标记
             from openemail.storage.database import db
 
-            db.update("accounts", {"is_default": 0}, None, ())
+            db.update_all("accounts", {"is_default": 0})
 
             # 设置选中的账户为默认
             account.is_default = True

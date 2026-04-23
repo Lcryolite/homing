@@ -185,6 +185,10 @@ class Database:
         return cur.fetchall()
 
     def insert(self, table: str, data: dict) -> int:
+        """Auto-commit insert for backward compatibility.
+
+        For multi-statement atomicity, use transaction() + execute().
+        """
         columns = ", ".join(f'"{k}"' for k in data.keys())
         placeholders = ", ".join("?" for _ in data)
         sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
@@ -195,6 +199,10 @@ class Database:
     def update(
         self, table: str, data: dict, where: str, where_params: tuple = ()
     ) -> int:
+        """Auto-commit update for backward compatibility.
+
+        For multi-statement atomicity, use transaction() + execute().
+        """
         # 添加SQL注入验证（向后兼容）
         self._validate_sql_injection(where)
         self._validate_identifier(table)
@@ -208,58 +216,178 @@ class Database:
         return cur.rowcount
 
     def delete(self, table: str, where: str, params: tuple = ()) -> int:
+        """Auto-commit delete for backward compatibility.
+
+        For multi-statement atomicity, use transaction() + execute().
+        """
         self._validate_sql_injection(where)
         sql = f"DELETE FROM {table} WHERE {where}"
         cur = self.execute(sql, params)
         self.commit()
         return cur.rowcount
 
+    # --- 事务支持 ---
+
+    def transaction(self):
+        """返回一个事务上下文管理器，支持多语句原子提交/回滚。
+
+        Usage:
+            with db.transaction():
+                db.execute("INSERT INTO ...", (...))
+                db.execute("UPDATE ...", (...))
+                # commits on successful exit, rolls back on exception
+        """
+        return _TransactionContext(self.conn)
+
+    def insert_tx(self, table: str, data: dict) -> int:
+        """Non-committing insert — caller must manage transaction."""
+        columns = ", ".join(f'"{k}"' for k in data.keys())
+        placeholders = ", ".join("?" for _ in data)
+        sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+        cur = self.execute(sql, tuple(data.values()))
+        return cur.lastrowid
+
+    def update_tx(
+        self, table: str, data: dict, where: str, where_params: tuple = ()
+    ) -> int:
+        """Non-committing update — caller must manage transaction."""
+        self._validate_sql_injection(where)
+        self._validate_identifier(table)
+        for field in data.keys():
+            self._validate_identifier(field)
+        set_clause = ", ".join(f'"{k}" = ?' for k in data)
+        sql = f"UPDATE {table} SET {set_clause} WHERE {where}"
+        cur = self.execute(sql, tuple(data.values()) + where_params)
+        return cur.rowcount
+
+    def delete_tx(self, table: str, where: str, params: tuple = ()) -> int:
+        """Non-committing delete — caller must manage transaction."""
+        self._validate_sql_injection(where)
+        sql = f"DELETE FROM {table} WHERE {where}"
+        cur = self.execute(sql, params)
+        return cur.rowcount
+
     # --- 安全接口部分 ---
 
-    def _validate_sql_injection(self, where_clause: str) -> None:
-        """验证WHERE子句是否存在SQL注入风险"""
-        sql_keywords = [
-            "SELECT",
-            "INSERT",
-            "UPDATE",
-            "DELETE",
-            "DROP",
-            "CREATE",
-            "ALTER",
-            "UNION",
-            "JOIN",
-            "EXEC",
-            "EXECUTE",
-        ]
+    def _validate_sql_injection(self, where_clause: str | None) -> None:
+        """Validate WHERE clause is a simple safe expression (whitelist approach).
 
-        upper_where = where_clause.upper()
-        for keyword in sql_keywords:
-            pattern = rf"\b{keyword}\b"
-            if re.search(pattern, upper_where):
+        Allowed patterns:
+        - column = ?
+        - column <> ?  / column != ?
+        - column < ? / column <= ? / column > ? / column >= ?
+        - column LIKE ?
+        - column IN (?, ?, ...)
+        - column IS ? / column IS NOT ?
+        - combinations of above joined by AND (no OR, no parentheses)
+
+        Anything else is rejected.
+        """
+        if where_clause is None:
+            raise ValueError("WHERE clause cannot be None")
+
+        clause = where_clause.strip()
+        if not clause:
+            raise ValueError("WHERE clause cannot be empty")
+
+        # Blocklist of dangerous characters / patterns
+        dangerous = [";", "--", "/*", "*/", "(", ")", "'", '"']
+        for d in dangerous:
+            if d in clause:
                 raise ValueError(
-                    f"SQL注入风险: WHERE子句中包含禁止的SQL关键字 '{keyword}': {where_clause}"
+                    f"SQL injection risk: WHERE clause contains forbidden character '{d}': {clause}"
                 )
 
-        for keyword in ["OR", "AND"]:
-            pattern = rf"\b{keyword}\b\s+\d"
-            if re.search(pattern, upper_where):
+        # Split by AND, validate each part
+        parts = [p.strip() for p in clause.split(" AND ")]
+        for part in parts:
+            if not part:
+                continue
+            # Must match: identifier [NOT] op [? | (?, ?, ...)]
+            # Supported ops after identifier: =, <>, !=, <, <=, >, >=, LIKE, IN, IS, IS NOT
+            tokens = part.split()
+            if len(tokens) < 3:
                 raise ValueError(
-                    f"SQL注入风险: WHERE子句中包含不安全的逻辑操作 '{keyword}': {where_clause}"
-                )
-            pattern_eq = rf"\b{keyword}\b\s+\w+\s*=\s*\d"
-            if re.search(pattern_eq, upper_where):
-                raise ValueError(
-                    f"SQL注入风险: WHERE子句中包含不安全的逻辑操作 '{keyword}': {where_clause}"
+                    f"SQL injection risk: WHERE clause part too short: '{part}'"
                 )
 
-        if ";" in where_clause:
-            raise ValueError(f"SQL注入风险: WHERE子句中包含分号: {where_clause}")
+            # First token must be a safe identifier
+            self._validate_identifier(tokens[0])
+
+            # Detect operator
+            op_start = 1
+            if tokens[1].upper() == "NOT":
+                op_start = 2
+
+            if op_start >= len(tokens):
+                raise ValueError(
+                    f"SQL injection risk: malformed WHERE clause part: '{part}'"
+                )
+
+            op = tokens[op_start].upper()
+            if op not in {"=", "<>", "!=", "<", "<=", ">", ">=", "LIKE", "IN", "IS"}:
+                raise ValueError(
+                    f"SQL injection risk: unsupported operator '{op}' in WHERE clause: {clause}"
+                )
+
+            # After op, only ? or (?, ?, ...) allowed
+            rest = " ".join(tokens[op_start + 1 :]).strip()
+            if not rest:
+                raise ValueError(
+                    f"SQL injection risk: missing value in WHERE clause part: '{part}'"
+                )
+
+            if op == "IN":
+                if not (rest.startswith("?") or rest.startswith("(")):
+                    raise ValueError(
+                        f"SQL injection risk: malformed IN clause: '{part}'"
+                    )
+            else:
+                if rest != "?":
+                    raise ValueError(
+                        f"SQL injection risk: parameterized queries must use '?' placeholder: '{part}'"
+                    )
+
+    def update_by_id(self, table: str, data: dict, record_id: int) -> int:
+        """Safe update of a single record by its primary key."""
+        self._validate_identifier(table)
+        for field in data.keys():
+            self._validate_identifier(field)
+
+        set_clause = ", ".join(f'"{k}" = ?' for k in data)
+        sql = f"UPDATE {table} SET {set_clause} WHERE id = ?"
+        cur = self.execute(sql, tuple(data.values()) + (record_id,))
+        self.commit()
+        return cur.rowcount
+
+    def delete_by_id(self, table: str, record_id: int) -> int:
+        """Safe delete of a single record by its primary key."""
+        self._validate_identifier(table)
+        sql = f"DELETE FROM {table} WHERE id = ?"
+        cur = self.execute(sql, (record_id,))
+        self.commit()
+        return cur.rowcount
 
     def _validate_identifier(self, identifier: str) -> None:
         """验证标识符（表名、字段名）是否安全"""
         # 只允许字母、数字、下划线
         if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", identifier):
             raise ValueError(f"不安全的标识符: {identifier}")
+
+    def update_all(self, table: str, data: dict) -> int:
+        """Safe unconditional update of all rows in a table.
+
+        Use sparingly — this bypasses the WHERE clause validator.
+        """
+        self._validate_identifier(table)
+        for field in data.keys():
+            self._validate_identifier(field)
+
+        set_clause = ", ".join(f'"{k}" = ?' for k in data)
+        sql = f"UPDATE {table} SET {set_clause}"
+        cur = self.execute(sql, tuple(data.values()))
+        self.commit()
+        return cur.rowcount
 
     def update_safe(
         self, table: str, data: Dict[str, Any], filters: Dict[str, Any]
@@ -441,6 +569,36 @@ class Database:
             result["issues"].append(f"health_check exception: {e}")
 
         return result
+
+
+class _TransactionContext:
+    """SQLite transaction context manager — commit on success, rollback on exception."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self._conn = conn
+        self._depth = 0
+
+    def __enter__(self) -> "_TransactionContext":
+        # SQLite supports SAVEPOINT for nested transactions
+        if self._depth == 0:
+            self._conn.execute("BEGIN")
+        else:
+            self._conn.execute(f"SAVEPOINT sp_{self._depth}")
+        self._depth += 1
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self._depth -= 1
+        if exc_type is None:
+            if self._depth == 0:
+                self._conn.commit()
+            else:
+                self._conn.execute(f"RELEASE SAVEPOINT sp_{self._depth}")
+        else:
+            if self._depth == 0:
+                self._conn.rollback()
+            else:
+                self._conn.execute(f"ROLLBACK TO SAVEPOINT sp_{self._depth}")
 
 
 db = Database()

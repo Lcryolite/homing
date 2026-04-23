@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from email.message import Message
 
@@ -35,15 +36,7 @@ class DraftSyncer:
                 raise ConnectionError(f"Cannot connect for draft sync: {account.email}")
 
             try:
-                drafts_folder = Folder.get_by_special_use(account.id, "drafts")
-                if not drafts_folder:
-                    drafts_folder = Folder.get_by_name(account.id, "Drafts")
-                if not drafts_folder:
-                    for name in ["Drafts", "草稿", "DRAFTS"]:
-                        drafts_folder = Folder.get_by_name(account.id, name)
-                        if drafts_folder:
-                            break
-
+                drafts_folder = await DraftSyncer._find_drafts_folder(account)
                 if not drafts_folder:
                     logger.warning("未找到 Drafts 文件夹，跳过远程同步")
                     return False
@@ -51,19 +44,18 @@ class DraftSyncer:
                 msg = DraftSyncer._build_mime_message(draft, account)
                 msg_bytes = msg.as_bytes()
 
-                result = await client._client.append(
+                new_uid = await client.append_message(
                     drafts_folder.name,
-                    None,
-                    None,
                     msg_bytes,
+                    flags=["\\Draft"],
                 )
 
-                if result == "OK":
-                    draft.mark_synced()
-                    logger.info("草稿已同步到远端: ID=%d", draft.id)
+                if new_uid is not None:
+                    draft.mark_synced(new_uid)
+                    logger.info("草稿已同步到远端: ID=%d, UID=%s", draft.id, new_uid or "unknown")
                     return True
                 else:
-                    raise RuntimeError(f"IMAP APPEND failed: {result}")
+                    raise RuntimeError("IMAP APPEND failed: no UID returned")
 
             finally:
                 await client.disconnect()
@@ -105,16 +97,11 @@ class DraftSyncer:
                 return False
 
             try:
-                drafts_folder = Folder.get_by_special_use(account.id, "drafts")
-                if not drafts_folder:
-                    drafts_folder = Folder.get_by_name(account.id, "Drafts")
+                drafts_folder = await DraftSyncer._find_drafts_folder(account)
                 if not drafts_folder:
                     return False
 
-                await client._client.select(drafts_folder.name)
-                await client._client.store(draft.uid, "+FLAGS", "\\Deleted")
-                await client._client.expunge()
-
+                await client.delete_email(draft.uid, drafts_folder.name)
                 logger.info("远端草稿已删除: UID=%s", draft.uid)
                 return True
 
@@ -124,6 +111,21 @@ class DraftSyncer:
         except Exception as e:
             logger.error("删除远端草稿失败: UID=%s, Error=%s", draft.uid, e)
             return False
+
+    @staticmethod
+    async def _find_drafts_folder(account: Account) -> Folder | None:
+        """查找账户的 Drafts 文件夹，支持多种命名。"""
+        for special_use in ["drafts", "\\Drafts"]:
+            folder = Folder.get_by_special_use(account.id, special_use)
+            if folder:
+                return folder
+
+        for name in ["Drafts", "草稿", "DRAFTS", "[Gmail]/Drafts"]:
+            folder = Folder.get_by_name(account.id, name)
+            if folder:
+                return folder
+
+        return None
 
     @staticmethod
     def _build_mime_message(draft: Draft, account: Account) -> Message:
@@ -142,5 +144,21 @@ class DraftSyncer:
             builder.set_in_reply_to(draft.in_reply_to)
         if draft.references:
             builder.set_references(draft.references)
+
+        # 附加本地附件
+        attachments = draft.get_attachments_list()
+        for att in attachments:
+            path = att.get("path") if isinstance(att, dict) else None
+            if not path or not __import__("os").path.exists(path):
+                continue
+            try:
+                with open(path, "rb") as f:
+                    data = f.read()
+                filename = att.get("filename") or __import__("os").path.basename(path)
+                mime_type = att.get("mime_type") or "application/octet-stream"
+                builder.add_attachment(filename, data, mime_type)
+            except Exception as e:
+                logger.warning("附件 %s 读取失败，跳过: %s", path, e)
+
         builder.add_header("X-Draft-Id", str(draft.id))
         return builder.build()

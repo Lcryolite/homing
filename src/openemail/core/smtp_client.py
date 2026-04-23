@@ -107,6 +107,43 @@ def _save_sent_copy(account: Account, message) -> None:
 class SMTPClient:
     def __init__(self, account: Account) -> None:
         self._account = account
+        self._smtp: aiosmtplib.SMTP | None = None
+
+    async def connect(self) -> bool:
+        """Establish a persistent SMTP connection (used by ConnectionManager cache)."""
+        if not AIOSMTPLIB_AVAILABLE:
+            return True  # sync fallback; connect is a no-op
+        try:
+            use_tls = self._account.ssl_mode == "ssl"
+            start_tls = self._account.ssl_mode == "starttls"
+            self._smtp = aiosmtplib.SMTP(
+                hostname=self._account.smtp_host,
+                port=self._account.smtp_port,
+                use_tls=use_tls,
+            )
+            await self._smtp.connect()
+            if start_tls:
+                await self._smtp.starttls()
+            if self._account.auth_type == "password":
+                await self._smtp.login(self._account.email, self._account.password)
+            elif self._account.auth_type == "oauth2":
+                auth_string = OAuth2Authenticator.build_xoauth2_string(
+                    self._account.email, self._account.oauth_token
+                )
+                await self._smtp.auth_xoauth2(self._account.email, auth_string)
+            return True
+        except Exception as e:
+            logger.error("SMTP connect error for %s: %s", self._account.email, e)
+            self._smtp = None
+            return False
+
+    async def disconnect(self) -> None:
+        if self._smtp:
+            try:
+                await self._smtp.quit()
+            except Exception:
+                pass
+            self._smtp = None
 
     async def send(
         self,
@@ -162,15 +199,18 @@ class SMTPClient:
             raise
 
         try:
-            use_tls = self._account.ssl_mode == "ssl"
-            start_tls = self._account.ssl_mode == "starttls"
-
-            if self._account.auth_type == "oauth2":
+            # Prefer persistent connection if available (ConnectionManager cache)
+            if self._smtp is not None and self._smtp.is_connected:
+                await self._smtp.sendmail(
+                    self._account.email, all_recipients, message_str
+                )
+            elif self._account.auth_type == "oauth2":
                 auth_string = OAuth2Authenticator.build_xoauth2_string(
                     self._account.email, self._account.oauth_token
                 )
                 await self._send_with_xoauth2(
-                    message_str, all_recipients, use_tls, start_tls, auth_string
+                    message_str, all_recipients, self._account.ssl_mode == "ssl",
+                    self._account.ssl_mode == "starttls", auth_string
                 )
             elif AIOSMTPLIB_AVAILABLE:
                 await aiosmtplib.send(
@@ -180,11 +220,15 @@ class SMTPClient:
                     port=self._account.smtp_port,
                     username=self._account.email,
                     password=self._account.password,
-                    use_tls=use_tls,
-                    start_tls=start_tls,
+                    use_tls=self._account.ssl_mode == "ssl",
+                    start_tls=self._account.ssl_mode == "starttls",
                 )
             else:
-                await self._send_sync(message_str, all_recipients, use_tls, start_tls)
+                await self._send_sync(
+                    message_str, all_recipients,
+                    self._account.ssl_mode == "ssl",
+                    self._account.ssl_mode == "starttls",
+                )
 
             # Save a copy to the local Sent folder on successful send
             try:
@@ -266,6 +310,11 @@ class SMTPClient:
         try:
             use_tls = self._account.ssl_mode == "ssl"
             start_tls = self._account.ssl_mode == "starttls"
+
+            if self._smtp is not None and self._smtp.is_connected:
+                # Use cached connection for test
+                await self._smtp.noop()
+                return True
 
             if AIOSMTPLIB_AVAILABLE:
                 if use_tls:

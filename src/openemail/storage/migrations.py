@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 14
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -365,6 +365,19 @@ MIGRATIONS: dict[int, list[str]] = {
         # Sync state tracking for folders (T1.4)
         """ALTER TABLE folders ADD COLUMN uid_validity TEXT DEFAULT ''""",
         """ALTER TABLE folders ADD COLUMN last_uid TEXT DEFAULT ''""",
+    ],
+    13: [
+        # Soft-delete support for folders (P1-6 audit fix)
+        """ALTER TABLE folders ADD COLUMN is_deleted INTEGER DEFAULT 0""",
+        """CREATE INDEX IF NOT EXISTS idx_folders_deleted ON folders(account_id, is_deleted)""",
+    ],
+    14: [
+        # Operation queue idempotency + retry backoff (T1.8)
+        """ALTER TABLE operation_queue ADD COLUMN last_attempt_at TEXT""",
+        """ALTER TABLE operation_queue ADD COLUMN next_retry_at TEXT""",
+        """ALTER TABLE operation_queue ADD COLUMN error_category TEXT""",
+        """CREATE INDEX IF NOT EXISTS idx_opq_pending_retry ON operation_queue(status, next_retry_at)""",
+        """CREATE INDEX IF NOT EXISTS idx_opq_dedup ON operation_queue(account_id, operation_type, email_uid, folder_name, status)""",
     ],
 }
 

@@ -20,6 +20,8 @@ import logging
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from openemail.utils.exceptions import AuthException
+
 if TYPE_CHECKING:
     from openemail.models.account import Account
 
@@ -40,7 +42,7 @@ class AuthErrorCode(str, Enum):
     UNKNOWN_AUTH_TYPE = "AUTH_005"
 
 
-class AuthError(Exception):
+class AuthError(AuthException):
     """Raised when pre-connection auth validation fails."""
 
     def __init__(self, code: AuthErrorCode, message: str, suggestion: str = "") -> None:

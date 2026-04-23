@@ -367,15 +367,50 @@ class Account:
             "metadata": self.metadata,
         }
         if self.id == 0:
-            # 检查是否已存在同email的账户，如果有则更新
-            existing = db.fetchone(
-                "SELECT id FROM accounts WHERE email = ?", (self.email,)
+            # Use INSERT OR REPLACE to avoid race conditions when two threads
+            # simultaneously try to create an account with the same email.
+            db.execute(
+                """
+                INSERT INTO accounts (email, name, protocol, imap_host, imap_port,
+                    pop3_host, pop3_port, smtp_host, smtp_port, eas_host, eas_path,
+                    ssl_mode, auth_type, oauth_provider, connection_status,
+                    token_expires_at, last_error_code, last_error_at, sync_fail_count,
+                    last_verified_at, validation_result, is_default, is_active,
+                    last_sync_at, password_enc, oauth_token_enc, oauth_refresh_enc, metadata)
+                VALUES (:email, :name, :protocol, :imap_host, :imap_port,
+                    :pop3_host, :pop3_port, :smtp_host, :smtp_port, :eas_host, :eas_path,
+                    :ssl_mode, :auth_type, :oauth_provider, :connection_status,
+                    :token_expires_at, :last_error_code, :last_error_at, :sync_fail_count,
+                    :last_verified_at, :validation_result, :is_default, :is_active,
+                    :last_sync_at, :password_enc, :oauth_token_enc, :oauth_refresh_enc, :metadata)
+                ON CONFLICT(email) DO UPDATE SET
+                    name=excluded.name, protocol=excluded.protocol,
+                    imap_host=excluded.imap_host, imap_port=excluded.imap_port,
+                    pop3_host=excluded.pop3_host, pop3_port=excluded.pop3_port,
+                    smtp_host=excluded.smtp_host, smtp_port=excluded.smtp_port,
+                    eas_host=excluded.eas_host, eas_path=excluded.eas_path,
+                    ssl_mode=excluded.ssl_mode, auth_type=excluded.auth_type,
+                    oauth_provider=excluded.oauth_provider,
+                    connection_status=excluded.connection_status,
+                    token_expires_at=excluded.token_expires_at,
+                    last_error_code=excluded.last_error_code,
+                    last_error_at=excluded.last_error_at,
+                    sync_fail_count=excluded.sync_fail_count,
+                    last_verified_at=excluded.last_verified_at,
+                    validation_result=excluded.validation_result,
+                    is_default=excluded.is_default, is_active=excluded.is_active,
+                    last_sync_at=excluded.last_sync_at,
+                    password_enc=excluded.password_enc,
+                    oauth_token_enc=excluded.oauth_token_enc,
+                    oauth_refresh_enc=excluded.oauth_refresh_enc,
+                    metadata=excluded.metadata
+                """,
+                data,
             )
-            if existing:
-                self.id = existing["id"] if isinstance(existing, dict) else existing[0]
-                db.update("accounts", data, "id = ?", (self.id,))
-            else:
-                self.id = db.insert("accounts", data)
+            db.commit()
+            # Fetch the inserted/replaced id
+            row = db.fetchone("SELECT id FROM accounts WHERE email = ?", (self.email,))
+            self.id = row["id"] if row else 0
         else:
             db.update("accounts", data, "id = ?", (self.id,))
         return self.id

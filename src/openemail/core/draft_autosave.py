@@ -128,8 +128,42 @@ class DraftAutoSave(QObject):
             self._draft_id = draft.id
             self._dirty = False
             logger.debug("草稿自动保存: ID=%d", draft.id)
+
+            # 触发后台远程同步（非阻塞）
+            if not draft.is_local_only:
+                self._trigger_background_sync(draft)
+
         except Exception as e:
             logger.error("草稿自动保存失败: %s", e)
+
+    def _trigger_background_sync(self, draft: Draft) -> None:
+        """在后台线程中触发草稿远端同步，不阻塞UI。"""
+        import threading
+
+        from openemail.models.account import Account
+
+        account = Account.get_by_id(self._account_id)
+        if not account:
+            return
+
+        def _sync():
+            import asyncio
+
+            from openemail.core.draft_syncer import DraftSyncer
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(
+                    DraftSyncer.sync_draft_to_remote(account, draft)
+                )
+            except Exception as e:
+                logger.debug("Background draft sync failed: %s", e)
+            finally:
+                loop.close()
+
+        t = threading.Thread(target=_sync, daemon=True)
+        t.start()
 
     def save_now(self) -> int:
         self._do_autosave()

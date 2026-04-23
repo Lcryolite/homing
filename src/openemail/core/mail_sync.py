@@ -37,7 +37,7 @@ class SyncWorker(QThread):
         try:
             self._loop.run_until_complete(self._sync_all_accounts())
         except Exception as e:
-            logger.debug("Suppressed exception in %s: %s", __name__, e)
+            logger.error("SyncWorker run failed: %s", e, exc_info=True)
         finally:
             self._loop.close()
 
@@ -63,7 +63,7 @@ class SyncWorker(QThread):
                 logger.info("账号同步完成: %s, 处理邮件: %d", account.email, total)
 
             except Exception as e:
-                logger.error("同步账号 %s 时出错: %s", account.email, str(e))
+                logger.error("同步账号 %s 时出错: %s", account.email, str(e), exc_info=True)
                 self.sync_error.emit(account.id, str(e))
 
                 # 增加失败计数
@@ -176,7 +176,7 @@ class IdleWorker(QThread):
         try:
             loop.run_until_complete(self._idle_loop())
         except Exception as e:
-            logger.debug("Suppressed exception in %s: %s", __name__, e)
+            logger.error("IdleWorker run failed: %s", e, exc_info=True)
         finally:
             loop.close()
 

@@ -355,7 +355,7 @@ class ComposeWindow(QDialog):
         )
 
     def _save_draft(self) -> None:
-        """保存草稿到本地数据库"""
+        """保存草稿到本地数据库并触发远端同步"""
         body_text = (
             self._html_edit.toPlainText()
             if self.tab_widget.currentIndex() == 1
@@ -370,29 +370,14 @@ class ComposeWindow(QDialog):
         )
         draft_id = self._autosave.save_now()
         if draft_id:
-            # Trigger background remote sync
-            try:
-                import threading
-                from openemail.core.draft_syncer import DraftSyncer
-                from openemail.models.draft import Draft
+            # 标记为非本地-only，触发后台同步
+            from openemail.models.draft import Draft
 
-                draft = Draft.get_by_id(draft_id)
-                if draft:
-
-                    def _sync():
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        try:
-                            loop.run_until_complete(
-                                DraftSyncer.sync_draft_to_remote(self._account, draft)
-                            )
-                        finally:
-                            loop.close()
-
-                    t = threading.Thread(target=_sync, daemon=True)
-                    t.start()
-            except Exception as e:
-                logger.debug("Background draft sync trigger failed: %s", e)
+            draft = Draft.get_by_id(draft_id)
+            if draft and draft.is_local_only:
+                draft.is_local_only = False
+                draft.save()
+                self._autosave._trigger_background_sync(draft)
 
             from PyQt6.QtWidgets import QMessageBox
 

@@ -53,8 +53,18 @@ class EmailThread:
             db.insert(
                 "email_thread_members", {"thread_id": self.id, "email_id": email_id}
             )
-            self.message_count += 1
+            self.message_count = self.refresh_message_count()
             self.save()
+
+    def refresh_message_count(self) -> int:
+        """Recount members from DB to fix drift."""
+        if not self.id:
+            return 0
+        row = db.fetchone(
+            "SELECT COUNT(*) as c FROM email_thread_members WHERE thread_id = ?",
+            (self.id,),
+        )
+        return row["c"] if row else 0
 
     def get_email_ids(self) -> list[int]:
         if not self.id:
@@ -64,6 +74,18 @@ class EmailThread:
             (self.id,),
         )
         return [r["email_id"] for r in rows]
+
+    def get_emails(self) -> list[dict]:
+        """Return full email rows ordered by date ascending (oldest first)."""
+        if not self.id:
+            return []
+        return db.fetchall(
+            """SELECT e.* FROM emails e
+               JOIN email_thread_members m ON e.id = m.email_id
+               WHERE m.thread_id = ?
+               ORDER BY e.date ASC""",
+            (self.id,),
+        )
 
     @classmethod
     def get_by_id(cls, thread_id: int) -> EmailThread | None:

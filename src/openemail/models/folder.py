@@ -60,6 +60,7 @@ class Folder:
     special_use: str = ""
     uid_validity: str = ""
     last_uid: str = ""
+    is_deleted: bool = False
 
     def save(self) -> int:
         data = {
@@ -71,6 +72,7 @@ class Folder:
             "special_use": self.special_use,
             "uid_validity": self.uid_validity,
             "last_uid": self.last_uid,
+            "is_deleted": int(self.is_deleted),
         }
         if self.id == 0:
             self.id = db.insert("folders", data)
@@ -80,6 +82,15 @@ class Folder:
 
     def delete(self) -> None:
         if self.id:
+            # Soft delete: mark folder and its emails as deleted
+            db.update("folders", {"is_deleted": 1}, "id = ?", (self.id,))
+            db.update("emails", {"is_deleted": 1}, "folder_id = ?", (self.id,))
+            self.is_deleted = True
+
+    def hard_delete(self) -> None:
+        """Permanently remove folder and all associated emails from DB."""
+        if self.id:
+            db.delete("emails", "folder_id = ?", (self.id,))
             db.delete("folders", "id = ?", (self.id,))
             self.id = 0
 
@@ -93,7 +104,7 @@ class Folder:
 
     @classmethod
     def get_by_id(cls, folder_id: int) -> Folder | None:
-        row = db.fetchone("SELECT * FROM folders WHERE id = ?", (folder_id,))
+        row = db.fetchone("SELECT * FROM folders WHERE id = ? AND is_deleted = 0", (folder_id,))
         if row is None:
             return None
         return cls._from_row(row)
@@ -101,7 +112,7 @@ class Folder:
     @classmethod
     def get_by_name(cls, account_id: int, name: str) -> Folder | None:
         row = db.fetchone(
-            "SELECT * FROM folders WHERE account_id = ? AND name = ?",
+            "SELECT * FROM folders WHERE account_id = ? AND name = ? AND is_deleted = 0",
             (account_id, name),
         )
         if row is None:
@@ -111,7 +122,7 @@ class Folder:
     @classmethod
     def get_by_special_use(cls, account_id: int, special_use: str) -> Folder | None:
         row = db.fetchone(
-            "SELECT * FROM folders WHERE account_id = ? AND special_use = ?",
+            "SELECT * FROM folders WHERE account_id = ? AND special_use = ? AND is_deleted = 0",
             (account_id, special_use),
         )
         if row is None:
@@ -121,9 +132,31 @@ class Folder:
     @classmethod
     def get_by_account(cls, account_id: int) -> list[Folder]:
         rows = db.fetchall(
-            "SELECT * FROM folders WHERE account_id = ? ORDER BY name", (account_id,)
+            "SELECT * FROM folders WHERE account_id = ? AND is_deleted = 0 ORDER BY name", (account_id,)
         )
         return [cls._from_row(r) for r in rows]
+
+    @classmethod
+    def get_deleted(cls, account_id: int) -> list[Folder]:
+        rows = db.fetchall(
+            "SELECT * FROM folders WHERE account_id = ? AND is_deleted = 1 ORDER BY name", (account_id,)
+        )
+        return [cls._from_row(r) for r in rows]
+
+    @classmethod
+    def restore_deleted(cls, account_id: int, name: str) -> Folder | None:
+        row = db.fetchone(
+            "SELECT * FROM folders WHERE account_id = ? AND name = ? AND is_deleted = 1",
+            (account_id, name),
+        )
+        if row is None:
+            return None
+        folder = cls._from_row(row)
+        folder.is_deleted = False
+        folder.save()
+        # Also restore emails in this folder
+        db.update("emails", {"is_deleted": 0}, "folder_id = ?", (folder.id,))
+        return folder
 
     @classmethod
     def ensure_system_folders(cls, account_id: int) -> list[Folder]:
@@ -203,10 +236,11 @@ class Folder:
         Handles:
         - New folders → create
         - Renamed folders → update path (match by special_use or fuzzy)
-        - Deleted folders → remove from DB
+        - Deleted folders → soft-delete (mark is_deleted=1)
+        - Re-appeared folders → restore from soft-delete
         - Existing unchanged → keep
 
-        Returns the full list of current folders after reconciliation.
+        Returns the full list of current active folders after reconciliation.
         """
         remote_by_name: dict[str, dict[str, Any]] = {}
         for rf in remote_folders:
@@ -218,27 +252,43 @@ class Folder:
         local_by_name = {f.name: f for f in local_folders}
         local_names = set(local_by_name.keys())
 
-        # 1. Deleted folders: in local but not remote → delete
+        # Include soft-deleted folders for potential restoration
+        deleted_folders = cls.get_deleted(account_id)
+        deleted_by_name = {f.name: f for f in deleted_folders}
+
+        # 1. Deleted folders: in local but not remote → soft-delete
         removed = local_names - remote_names
         for name in removed:
             folder = local_by_name[name]
             logger.info(
-                "Folder '%s' no longer on server, removing local (id=%d)", name, folder.id
+                "Folder '%s' no longer on server, soft-deleting local (id=%d)", name, folder.id
             )
-            # Remove emails in this folder first
-            db.execute(
-                "DELETE FROM emails WHERE account_id = ? AND folder_id = ?",
-                (account_id, folder.id),
-            )
-            db.execute("DELETE FROM folders WHERE id = ?", (folder.id,))
+            folder.delete()
 
-        # 2. New folders: in remote but not local → create
+        # 2. New folders: in remote but not local → create (or restore if previously deleted)
         added = remote_names - local_names
         result: list[Folder] = []
         for name in added:
             rf = remote_by_name[name]
             flags = rf.get("flags", [])
             special_use = cls._resolve_special_use(name, flags) or ""
+
+            # Check if this folder was previously soft-deleted → restore it
+            if name in deleted_by_name:
+                restored = cls.restore_deleted(account_id, name)
+                if restored:
+                    # Update path/special_use if changed while deleted
+                    remote_path = rf.get("path", name)
+                    if remote_path and restored.path != remote_path:
+                        restored.path = remote_path
+                    if special_use and not restored.special_use:
+                        restored.special_use = special_use
+                        restored.is_system = True
+                    if restored.path != rf.get("path", name) or (special_use and not restored.special_use):
+                        restored.save()
+                    result.append(restored)
+                    continue
+
             folder = cls(
                 account_id=account_id,
                 name=name,
@@ -278,7 +328,7 @@ class Folder:
     @classmethod
     def get_by_path(cls, account_id: int, path: str) -> Folder | None:
         row = db.fetchone(
-            "SELECT * FROM folders WHERE account_id = ? AND path = ?",
+            "SELECT * FROM folders WHERE account_id = ? AND path = ? AND is_deleted = 0",
             (account_id, path),
         )
         if row is None:
@@ -322,4 +372,5 @@ class Folder:
             special_use=row["special_use"] if "special_use" in row.keys() else "",
             uid_validity=row["uid_validity"] if "uid_validity" in row.keys() else "",
             last_uid=row["last_uid"] if "last_uid" in row.keys() else "",
+            is_deleted=bool(row.get("is_deleted", 0)),
         )

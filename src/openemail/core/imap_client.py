@@ -37,18 +37,27 @@ except ImportError:
             self._conn = None
 
         async def wait_hello_from_server(self):
-            if self._ssl_mode == "ssl" or self._port == 993:
-                ctx = _ssl.create_default_context()
-                self._conn = imaplib.IMAP4_SSL(
-                    self._host, self._port, ssl_context=ctx, timeout=self._timeout
-                )
-            else:
-                self._conn = imaplib.IMAP4(
-                    self._host, self._port, timeout=self._timeout
-                )
-                if self._ssl_mode == "starttls":
+            try:
+                if self._ssl_mode == "ssl" or self._port == 993:
                     ctx = _ssl.create_default_context()
-                    self._conn.starttls(ssl_context=ctx)
+                    self._conn = imaplib.IMAP4_SSL(
+                        self._host, self._port, ssl_context=ctx, timeout=self._timeout
+                    )
+                else:
+                    self._conn = imaplib.IMAP4(
+                        self._host, self._port, timeout=self._timeout
+                    )
+                    if self._ssl_mode == "starttls":
+                        ctx = _ssl.create_default_context()
+                        self._conn.starttls(ssl_context=ctx)
+            except Exception:
+                if self._conn:
+                    try:
+                        self._conn.shutdown()
+                    except Exception:
+                        pass
+                self._conn = None
+                raise
 
         async def login(self, username, password):
             if not self._conn:
@@ -226,16 +235,21 @@ class IMAPClient:
                 try:
                     await self._client.select("INBOX")
                 except Exception as e:
-                    # 记录连接测试失败，但连接已建立
-                    logging.debug(
-                        f"IMAP connection INBOX select test failed (connection still established): {e}"
+                    logger.error(
+                        "IMAP connection INBOX select test failed for %s: %s",
+                        self._account.email,
+                        e,
                     )
+                    await self.disconnect()
+                    return False
             return True
         except Exception as e:
             error_msg = str(e)
             logger.error(
                 "IMAP connect error for %s: %s", self._account.email, error_msg
             )
+            # Ensure client is cleaned up on any connection failure
+            await self.disconnect()
 
             # 提供更好的错误提示
             if (
@@ -263,7 +277,8 @@ class IMAPClient:
                 await self._client.logout()
             except Exception as e:
                 logger.debug("Suppressed exception in %s: %s", __name__, e)
-            self._client = None
+            finally:
+                self._client = None
 
     async def list_folders(self) -> list[dict[str, Any]]:
         if not self._client:
@@ -612,6 +627,36 @@ class IMAPClient:
         except Exception:
             return False
 
+    async def append_message(
+        self, folder_name: str, msg_bytes: bytes, flags: list[str] | None = None
+    ) -> str | None:
+        """Append a message to a folder. Returns the new UID if available.
+
+        RFC 3501 APPEND response may include [APPENDUID uidvalidity uid]
+        which we parse to return the assigned UID.
+        """
+        if not self._client:
+            return None
+
+        actual_name = await self._resolve_folder_name(folder_name)
+        flag_list = " ".join(flags) if flags else ""
+
+        try:
+            result = await self._client.append(actual_name, flag_list or None, None, msg_bytes)
+            # result is typically ('OK', [b'[APPENDUID 12345 678] ...'])
+            if isinstance(result, tuple) and len(result) >= 2:
+                status, items = result
+                if status == "OK" and items:
+                    for item in items:
+                        text = item.decode(errors="replace") if isinstance(item, bytes) else str(item)
+                        m = re.search(r"APPENDUID\s+\d+\s+(\d+)", text)
+                        if m:
+                            return m.group(1)
+            return ""
+        except Exception as e:
+            logger.error("APPEND to %s failed: %s", actual_name, e)
+            return None
+
     async def idle(self, folder_name: str, timeout: int = 300) -> list[str]:
         if not self._client:
             return []
@@ -694,6 +739,6 @@ class IMAPClient:
                 has_attachment=has_attachment,
                 preview_text=extract_preview(preview_text),
             )
-        except Exception:
-            logger.error("Error parsing email uid={uid}: {e}")
+        except Exception as e:
+            logger.error("Error parsing email uid=%s: %s", uid, e)
             return None

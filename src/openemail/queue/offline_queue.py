@@ -804,12 +804,16 @@ class OfflineQueue:
     def recover_interrupted_operations(self) -> int:
         """Recover operations left in 'processing' state (e.g., after crash).
 
+        Also resets 'retrying' operations whose next_attempt time has passed,
+        as they may have been stuck by a crash.
+
         Returns:
             Number of operations reset to pending.
         """
         try:
             now = datetime.now().isoformat()
-            cur = db.execute(
+            # Reset processing (interrupted mid-flight)
+            cur1 = db.execute(
                 """
                 UPDATE offline_operations
                 SET status = ?, updated_at = ?, next_attempt = ?
@@ -817,8 +821,18 @@ class OfflineQueue:
                 """,
                 (OperationStatus.PENDING.value, now, now, OperationStatus.PROCESSING.value),
             )
-            rowcount = cur.rowcount
-            logging.info("Recovered %d interrupted operations to pending", rowcount)
+            # Reset retrying that are past their scheduled time (clock may have changed / crash)
+            cur2 = db.execute(
+                """
+                UPDATE offline_operations
+                SET status = ?, updated_at = ?, next_attempt = ?
+                WHERE status = ? AND next_attempt <= ?
+                """,
+                (OperationStatus.PENDING.value, now, now, OperationStatus.RETRY_ING.value, now),
+            )
+            rowcount = (cur1.rowcount or 0) + (cur2.rowcount or 0)
+            if rowcount > 0:
+                logging.info("Recovered %d interrupted operations to pending", rowcount)
             return rowcount
         except Exception as e:
             logging.error("Recover interrupted operations failed: %s", e)

@@ -86,22 +86,16 @@ def _styles_dir() -> Path:
 def _recover_interrupted_queue() -> None:
     """Reset 'processing' operations back to 'pending' after a crash.
 
+    Delegates to OfflineQueue to avoid dual recovery logic.
     Operations stuck in 'processing' were interrupted mid-execution and
-    must be re-queued.  'success' operations are never touched.
+    must be re-queued. 'success' operations are never touched.
     """
     try:
-        from openemail.storage.database import db
+        from openemail.queue.offline_queue import get_offline_queue
 
-        cur = db.execute(
-            """
-            UPDATE offline_operations
-            SET status = 'pending', updated_at = datetime('now')
-            WHERE status IN ('processing', 'retrying')
-            """
-        )
-        reset_count = cur.rowcount
+        queue = get_offline_queue()
+        reset_count = queue.recover_interrupted_operations()
         if reset_count > 0:
-            db.commit()
             logger.info("崩溃恢复：已将 %d 个中断操作重置为 pending", reset_count)
         else:
             logger.debug("崩溃恢复：无中断的离线操作")

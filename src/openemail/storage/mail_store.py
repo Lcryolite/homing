@@ -30,15 +30,23 @@ class MailStore:
 
     def save_raw(self, account_id: int, folder: str, uid: str, raw: bytes) -> Path:
         folder_dir = self._folder_dir(account_id, folder)
-        file_path = folder_dir / f"{uid}.eml"
-        file_path.write_bytes(raw)
+        safe_uid = "".join(c if c.isalnum() or c in "._-" else "_" for c in str(uid))
+        file_path = folder_dir / f"{safe_uid}.eml"
+        try:
+            file_path.write_bytes(raw)
+        except OSError as e:
+            raise RuntimeError(f"Failed to save email raw data to {file_path}: {e}") from e
         return file_path
 
     def read_raw(self, file_path: str | Path) -> bytes | None:
         p = Path(file_path)
         if not p.exists():
             return None
-        return p.read_bytes()
+        try:
+            return p.read_bytes()
+        except OSError as e:
+            logging.getLogger(__name__).warning("Failed to read %s: %s", p, e)
+            return None
 
     def parse_email(self, raw: bytes) -> email.message.EmailMessage:
         return email.message_from_bytes(raw, policy=policy.default)
@@ -46,23 +54,35 @@ class MailStore:
     def delete_raw(self, file_path: str | Path) -> bool:
         p = Path(file_path)
         if p.exists():
-            p.unlink()
-            return True
+            try:
+                p.unlink()
+                return True
+            except OSError as e:
+                logging.getLogger(__name__).warning("Failed to delete %s: %s", p, e)
         return False
 
     def save_attachment(self, email_id: int, filename: str, data: bytes) -> Path:
         att_dir = self._attachment_dir(email_id)
         safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)
         file_path = att_dir / safe_name
-        file_path.write_bytes(data)
+        try:
+            file_path.write_bytes(data)
+        except OSError as e:
+            raise RuntimeError(f"Failed to save attachment to {file_path}: {e}") from e
         return file_path
 
     def delete_attachments(self, email_id: int) -> None:
         att_dir = self._attachment_dir(email_id)
         if att_dir.exists():
             for f in att_dir.iterdir():
-                f.unlink()
-            att_dir.rmdir()
+                try:
+                    f.unlink()
+                except OSError as e:
+                    logging.getLogger(__name__).warning("Failed to delete attachment %s: %s", f, e)
+            try:
+                att_dir.rmdir()
+            except OSError as e:
+                logging.getLogger(__name__).warning("Failed to remove attachment dir %s: %s", att_dir, e)
 
     def delete_account_data(self, account_id: int) -> None:
         account_dir = self._account_dir(account_id)
@@ -70,9 +90,18 @@ class MailStore:
             for folder_dir in account_dir.iterdir():
                 if folder_dir.is_dir():
                     for f in folder_dir.iterdir():
-                        f.unlink()
-                    folder_dir.rmdir()
-            account_dir.rmdir()
+                        try:
+                            f.unlink()
+                        except OSError as e:
+                            logging.getLogger(__name__).warning("Failed to delete %s: %s", f, e)
+                    try:
+                        folder_dir.rmdir()
+                    except OSError as e:
+                        logging.getLogger(__name__).warning("Failed to remove dir %s: %s", folder_dir, e)
+            try:
+                account_dir.rmdir()
+            except OSError as e:
+                logging.getLogger(__name__).warning("Failed to remove account dir %s: %s", account_dir, e)
 
     def cleanup_orphan_attachments(self) -> int:
         """Remove attachment directories with no matching email record.
