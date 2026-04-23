@@ -26,6 +26,7 @@ from openemail.core.mail_builder import MailBuilder
 from openemail.core.smtp_client import SMTPClient
 from openemail.core.draft_autosave import DraftAutoSave
 from openemail.models.account import Account
+from openemail.models.draft import Draft
 from openemail.models.email import Email
 from openemail.core.mail_parser import MailParser
 from openemail.storage.mail_store import mail_store
@@ -40,9 +41,10 @@ class ComposeWindow(QDialog):
 
     sent = pyqtSignal()
 
-    def __init__(self, account: Account, parent: QWidget | None = None) -> None:
+    def __init__(self, account: Account, draft_id: int = 0, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._account = account
+        self._draft_id = draft_id
         self._reply_to_email: Email | None = None
         self._forward_email: Email | None = None
         self._attachments: list[str] = []
@@ -286,6 +288,29 @@ class ComposeWindow(QDialog):
         self._html_edit.textChanged.connect(self._on_content_changed)
 
         self._autosave.update_content(from_addr=self._account.email)
+
+        # Restore draft if draft_id provided
+        if self._draft_id:
+            self._autosave.load_draft(self._draft_id)
+            draft = Draft.get_by_id(self._draft_id)
+            if draft:
+                self._from_field.setText(draft.from_addr)
+                self._to_field.setText(draft.to_addrs)
+                self._cc_field.setText(draft.cc_addrs)
+                self._subject_field.setText(draft.subject)
+                self._body_edit.setPlainText(draft.body_text)
+                if draft.body_html:
+                    self._html_edit.setHtml(draft.body_html)
+                if draft.attachments:
+                    try:
+                        import json
+                        atts = json.loads(draft.attachments)
+                        for att in atts:
+                            if isinstance(att, dict) and att.get("path"):
+                                self.attachment_manager.add_attachments([att["path"]])
+                    except Exception as e:
+                        logger.warning("Failed to restore draft attachments: %s", e)
+
         self._autosave.start()
 
     def _on_content_changed(self) -> None:
@@ -305,6 +330,11 @@ class ComposeWindow(QDialog):
     def reject(self) -> None:
         self._autosave.stop()
         super().reject()
+
+    def closeEvent(self, event) -> None:
+        """窗口关闭（包括点 X 按钮）时强制保存草稿"""
+        self._autosave.stop()
+        event.accept()
 
     def _on_attachments_changed(self, attachments: list[str]) -> None:
         """附件变化时更新"""
@@ -340,6 +370,30 @@ class ComposeWindow(QDialog):
         )
         draft_id = self._autosave.save_now()
         if draft_id:
+            # Trigger background remote sync
+            try:
+                import threading
+                from openemail.core.draft_syncer import DraftSyncer
+                from openemail.models.draft import Draft
+
+                draft = Draft.get_by_id(draft_id)
+                if draft:
+
+                    def _sync():
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            loop.run_until_complete(
+                                DraftSyncer.sync_draft_to_remote(self._account, draft)
+                            )
+                        finally:
+                            loop.close()
+
+                    t = threading.Thread(target=_sync, daemon=True)
+                    t.start()
+            except Exception as e:
+                logger.debug("Background draft sync trigger failed: %s", e)
+
             from PyQt6.QtWidgets import QMessageBox
 
             QMessageBox.information(
